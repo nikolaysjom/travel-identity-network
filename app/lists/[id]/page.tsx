@@ -69,12 +69,24 @@ export default function ListPage() {
     loadData()
   }
 
+  const handleDeleteList = async () => {
+    const confirmed = confirm('Er du sikker på at du vil slette hele listen?')
+    if (!confirmed) return
+
+    await supabase.from('lists').delete().eq('id', listId)
+    window.location.href = '/profile'
+  }
+
   if (!list) return <div style={{ padding: '2rem' }}>Laster...</div>
 
   return (
     <div style={{ maxWidth: 500, margin: '2rem auto', padding: '1rem' }}>
       <h1>{list.title}</h1>
       <p>{list.description}</p>
+
+      <button onClick={handleDeleteList} style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>
+        Slett liste
+      </button>
 
       <ol>
         {items.map((item) => (
