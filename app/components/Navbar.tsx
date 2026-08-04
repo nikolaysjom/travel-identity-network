@@ -33,8 +33,9 @@ export default function Navbar() {
     <nav style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 2rem', borderBottom: '1px solid #ddd' }}>
       <Link href="/" style={{ fontWeight: 'bold' }}>Travel Identity Network</Link>
       <div style={{ display: 'flex', gap: '1rem' }}>
-    {isLoggedIn ? (
+   {isLoggedIn ? (
   <>
+    <Link href="/lists/new">Ny liste</Link>
     <Link href="/add-city">Legg til by</Link>
     <Link href="/profile">Min profil</Link>
     <button onClick={handleLogout}>Logg ut</button>

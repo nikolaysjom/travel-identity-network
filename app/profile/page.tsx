@@ -17,10 +17,16 @@ type VisitedCity = {
   } | null
 }
 
+type ListItem = {
+  id: string
+  title: string
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [cities, setCities] = useState<VisitedCity[]>([])
   const [loading, setLoading] = useState(true)
+  const [lists, setLists] = useState<ListItem[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -46,6 +52,13 @@ export default function ProfilePage() {
         .eq('user_id', session.user.id)
 
       setCities((citiesData as unknown as VisitedCity[]) || [])
+
+      const { data: listsData } = await supabase
+         .from('lists')
+        .select('id, title')
+         .eq('user_id', session.user.id)
+
+      setLists(listsData || [])
       setLoading(false)
     }
 
@@ -80,6 +93,18 @@ export default function ProfilePage() {
           ))}
         </ul>
       )}
+      <h2>Mine lister</h2>
+{lists.length === 0 ? (
+  <p>Ingen lister ennå.</p>
+) : (
+  <ul>
+    {lists.map((list) => (
+      <li key={list.id}>
+        <a href={`/lists/${list.id}`}>{list.title}</a>
+      </li>
+    ))}
+  </ul>
+)}
     </div>
   )
 }
