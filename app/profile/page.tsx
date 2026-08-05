@@ -100,92 +100,208 @@ export default function ProfilePage() {
     if (!session) return
 
     await supabase.from('profiles').update({ bio: bioText }).eq('id', session.user.id)
-    setProfile((prev) => prev ? { ...prev, bio: bioText } : prev)
+    setProfile((prev) => (prev ? { ...prev, bio: bioText } : prev))
     setEditingBio(false)
   }
 
   const handleToggleLocal = async () => {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session || !profile) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session || !profile) return
 
-  const newValue = !profile.is_available_locally
+    const newValue = !profile.is_available_locally
 
-  await supabase
-    .from('profiles')
-    .update({ is_available_locally: newValue })
-    .eq('id', session.user.id)
+    await supabase
+      .from('profiles')
+      .update({ is_available_locally: newValue })
+      .eq('id', session.user.id)
 
-  setProfile((prev) => prev ? { ...prev, is_available_locally: newValue } : prev)
-}
+    setProfile((prev) => (prev ? { ...prev, is_available_locally: newValue } : prev))
+  }
 
-  if (loading) return <div style={{ padding: '2rem' }}>Laster...</div>
+  if (loading) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        Laster...
+      </div>
+    )
+  }
   if (!profile) return null
 
   const countries = new Set(cities.map((c) => c.destinations?.country_name))
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '1rem' }}>
-      <h1>{profile.username}</h1>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
 
-      {editingBio ? (
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-          <input
-            type="text"
-            value={bioText}
-            onChange={(e) => setBioText(e.target.value)}
-            style={{ flex: 1 }}
-          />
-          <button onClick={handleSaveBio}>Lagre</button>
+        <div style={{ marginTop: '0.6rem' }}>
+          {editingBio ? (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                value={bioText}
+                onChange={(e) => setBioText(e.target.value)}
+                style={{ flex: 1 }}
+                autoFocus
+              />
+              <button onClick={handleSaveBio}>Lagre</button>
+            </div>
+          ) : (
+            <p
+              onClick={() => setEditingBio(true)}
+              style={{ color: 'var(--text-secondary)', cursor: 'pointer', margin: 0, fontSize: '0.95rem' }}
+            >
+              {profile.bio || 'Legg til en bio'}
+            </p>
+          )}
         </div>
-      ) : (
-        <p onClick={() => setEditingBio(true)} style={{ cursor: 'pointer' }}>
-          {profile.bio || 'Ingen bio ennå'} <span style={{ fontSize: '0.8rem', color: '#888' }}>(klikk for å redigere)</span>
-        </p>
-      )}
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
-        <input
-          type="checkbox"
-          checked={profile.is_available_locally}
-         onChange={handleToggleLocal}
-  />
-  Tilgjengelig som lokal
-</label>
-
-      <div style={{ display: 'flex', gap: '2rem', margin: '1.5rem 0' }}>
-        <div>🌎 <strong>{countries.size}</strong> land</div>
-        <div>🏙️ <strong>{cities.length}</strong> byer</div>
-        <div>👥 <strong>{followerCount}</strong> følgere</div>
-        <div>➡️ <strong>{followingCount}</strong> følger</div>
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginTop: '0.9rem',
+            fontSize: '0.85rem',
+            color: profile.is_available_locally ? 'var(--accent)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={profile.is_available_locally}
+            onChange={handleToggleLocal}
+            style={{ width: 'auto', accentColor: 'var(--accent)' }}
+          />
+          Tilgjengelig som lokal
+        </label>
       </div>
 
-      <h2>Besøkte byer</h2>
+      <div
+        style={{
+          display: 'flex',
+          gap: '2.5rem',
+          padding: '1.2rem 0',
+          borderTop: '1px solid var(--border)',
+          borderBottom: '1px solid var(--border)',
+          marginBottom: '2.5rem',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
+            {countries.size}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>land</div>
+        </div>
+        <div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
+            {cities.length}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>byer</div>
+        </div>
+        <div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
+            {followerCount}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>følgere</div>
+        </div>
+        <div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
+            {followingCount}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>følger</div>
+        </div>
+      </div>
+
+      <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
+        Besøkte byer
+      </h2>
       {cities.length === 0 ? (
-        <p>Ingen byer lagt til ennå.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen byer lagt til ennå.</p>
       ) : (
-        <ul>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+            gap: '0.9rem',
+            marginBottom: '2.5rem',
+          }}
+        >
           {cities.map((c) => (
-            <li key={c.id}>
-              {c.destinations?.city_name}, {c.destinations?.country_name}
-              {c.rating ? ` — ⭐ ${c.rating}/10` : ''}
-              {' '}
-              <button onClick={() => handleDeleteCity(c.id)} style={{ fontSize: '0.8rem' }}>Slett</button>
-            </li>
+            <div
+              key={c.id}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '1rem',
+                position: 'relative',
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
+                {c.destinations?.country_name}
+              </div>
+              {c.rating && (
+                <div
+                  style={{
+                    marginTop: '0.6rem',
+                    fontSize: '0.85rem',
+                    color:
+                      c.rating < 5
+                        ? 'var(--rating-low)'
+                        : c.rating < 7.5
+                        ? 'var(--rating-mid)'
+                        : 'var(--rating-high)',
+          }}
+        >
+          {c.rating}/10
+        </div>
+      )}
+              
+              <button
+                onClick={() => handleDeleteCity(c.id)}
+                style={{
+                  position: 'absolute',
+                  top: '0.6rem',
+                  right: '0.6rem',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.7rem',
+                  padding: '0.2rem 0.4rem',
+                }}
+              >
+                X
+              </button>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
-      <h2>Mine lister</h2>
+      <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
+        Mine lister
+      </h2>
       {lists.length === 0 ? (
-        <p>Ingen lister ennå.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen lister ennå.</p>
       ) : (
-        <ul>
-          {lists.map((list) => (
-            <li key={list.id}>
-              <a href={`/lists/${list.id}`}>{list.title}</a>
-            </li>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+         {lists.map((list) => (
+            <a
+              key={list.id}
+                href={`/lists/${list.id}`}
+                style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '0.9rem 1.1rem',
+                fontSize: '0.9rem',
+                display: 'block',
+              }}
+            >
+              {list.title}
+            </a>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   )
