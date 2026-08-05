@@ -22,9 +22,9 @@ type WorldMapProps = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  visited: '#2DD4BF',
-  lived: '#F2C94C',
-  want_to_go: '#4A5056',
+  visited: '#2E9B63',
+  lived: '#E8A33D',
+  want_to_go: '#9B9B9B',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -53,8 +53,6 @@ export default function WorldMap({
     const status = code ? countryStatus[code] : undefined
 
     if (!status) {
-      // No relationship to this country - stay fully transparent,
-      // don't obscure the base map at all.
       return {
         fillOpacity: 0,
         weight: 0,
@@ -63,9 +61,9 @@ export default function WorldMap({
 
     return {
       fillColor: STATUS_COLOR[status],
-      fillOpacity: 0.12,
+      fillOpacity: 0.18,
       color: STATUS_COLOR[status],
-      weight: 1.6,
+      weight: 1.8,
       opacity: 0.9,
     }
   }
@@ -82,7 +80,7 @@ export default function WorldMap({
       <MapContainer
         center={[20, 10]}
         zoom={2}
-        style={{ height: '100%', width: '100%', background: '#0E1113' }}
+        style={{ height: '100%', width: '100%', background: '#F7F7F7' }}
         zoomControl={interactive}
         dragging={interactive}
         scrollWheelZoom={interactive}
@@ -91,7 +89,7 @@ export default function WorldMap({
         attributionControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"
         />
         {geoData && <GeoJSON data={geoData} style={styleFeature} />}

@@ -1,19 +1,17 @@
 @import "tailwindcss";
-@import "leaflet/dist/leaflet.css";
 
 :root {
-  --bg: #0E1113;
-  --surface: #171B1E;
-  --surface-hover: #1D2226;
-  --text-primary: #F2F1ED;
-  --text-secondary: #8B9296;
-  --accent: #2DD4BF;
-  --accent-secondary: #F2C94C;
-  --border: #232830;
-  --rating-low: #E8604C;
-  --rating-mid: #F2C94C;
-  --rating-high: #4CD97D;
-
+  --bg: #FFFFFF;
+  --surface: #F7F7F7;
+  --surface-hover: #EFEFEF;
+  --text-primary: #222222;
+  --text-secondary: #767676;
+  --accent: #F0455E;
+  --accent-secondary: #E8A33D;
+  --border: #EEEEEE;
+  --rating-low: #E0483F;
+  --rating-mid: #E8A33D;
+  --rating-high: #2E9B63;
 }
 
 * {
@@ -64,7 +62,7 @@ button {
   font-size: 0.9rem;
   font-weight: 500;
   background: var(--accent);
-  color: #0B0C0F;
+  color: #FFFFFF;
   transition: opacity 0.15s ease;
 }
 
