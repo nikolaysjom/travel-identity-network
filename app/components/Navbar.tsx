@@ -36,6 +36,7 @@ export default function Navbar() {
    {isLoggedIn ? (
   <>
     <Link href="/lists/new">Ny liste</Link>
+    <Link href="/search">Søk</Link>
     <Link href="/add-city">Legg til by</Link>
     <Link href="/profile">Min profil</Link>
     <button onClick={handleLogout}>Logg ut</button>

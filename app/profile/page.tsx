@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 type Profile = {
   username: string
   bio: string | null
+  is_available_locally: boolean
 }
 
 type VisitedCity = {
@@ -30,6 +31,8 @@ export default function ProfilePage() {
   const [lists, setLists] = useState<ListItem[]>([])
   const [editingBio, setEditingBio] = useState(false)
   const [bioText, setBioText] = useState('')
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function ProfilePage() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, bio')
+        .select('username, bio, is_available_locally')
         .eq('id', session.user.id)
         .single()
 
@@ -63,6 +66,21 @@ export default function ProfilePage() {
         .eq('user_id', session.user.id)
 
       setLists(listsData || [])
+
+      const { count: followers } = await supabase
+        .from('follows')
+        .select('id', { count: 'exact' })
+        .eq('following_id', session.user.id)
+
+      setFollowerCount(followers || 0)
+
+      const { count: following } = await supabase
+        .from('follows')
+        .select('id', { count: 'exact' })
+        .eq('follower_id', session.user.id)
+
+      setFollowingCount(following || 0)
+
       setLoading(false)
     }
 
@@ -85,6 +103,20 @@ export default function ProfilePage() {
     setProfile((prev) => prev ? { ...prev, bio: bioText } : prev)
     setEditingBio(false)
   }
+
+  const handleToggleLocal = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session || !profile) return
+
+  const newValue = !profile.is_available_locally
+
+  await supabase
+    .from('profiles')
+    .update({ is_available_locally: newValue })
+    .eq('id', session.user.id)
+
+  setProfile((prev) => prev ? { ...prev, is_available_locally: newValue } : prev)
+}
 
   if (loading) return <div style={{ padding: '2rem' }}>Laster...</div>
   if (!profile) return null
@@ -111,9 +143,20 @@ export default function ProfilePage() {
         </p>
       )}
 
+      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
+        <input
+          type="checkbox"
+          checked={profile.is_available_locally}
+         onChange={handleToggleLocal}
+  />
+  Tilgjengelig som lokal
+</label>
+
       <div style={{ display: 'flex', gap: '2rem', margin: '1.5rem 0' }}>
         <div>🌎 <strong>{countries.size}</strong> land</div>
         <div>🏙️ <strong>{cities.length}</strong> byer</div>
+        <div>👥 <strong>{followerCount}</strong> følgere</div>
+        <div>➡️ <strong>{followingCount}</strong> følger</div>
       </div>
 
       <h2>Besøkte byer</h2>
