@@ -43,7 +43,7 @@ export default function SignupPage() {
       }}
     >
       <h1 style={{ fontSize: '1.6rem', marginBottom: '0.4rem', textAlign: 'center' }}>
-        Opprett konto
+        Create account
       </h1>
       <p
         style={{
@@ -53,7 +53,7 @@ export default function SignupPage() {
           marginBottom: '2.2rem',
         }}
       >
-        Bygg din digitale reiseidentitet
+        Build your digital travel identity
       </p>
 
       <form
@@ -62,21 +62,21 @@ export default function SignupPage() {
       >
         <input
           type="text"
-          placeholder="Brukernavn"
+          placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
         />
         <input
           type="email"
-          placeholder="E-post"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
           type="password"
-          placeholder="Passord"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -87,7 +87,7 @@ export default function SignupPage() {
         )}
 
         <button type="submit" style={{ marginTop: '0.5rem' }}>
-          Opprett konto
+          Create account
         </button>
       </form>
 
@@ -99,9 +99,9 @@ export default function SignupPage() {
           marginTop: '1.5rem',
         }}
       >
-        Har du allerede en konto?{' '}
+        Already have an account?{' '}
         <Link href="/login" style={{ color: 'var(--accent)' }}>
-          Logg inn
+          Log in
         </Link>
       </p>
     </div>

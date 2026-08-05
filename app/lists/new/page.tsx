@@ -48,21 +48,21 @@ export default function NewListPage() {
         flexDirection: 'column',
       }}
     >
-      <h1 style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>Ny liste</h1>
+      <h1 style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>New list</h1>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-        Samle stedene dine i en liste
+        Collect your favorite places in a list
       </p>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
         <input
           type="text"
-          placeholder="Tittel (f.eks. Mine topp 10 byer)"
+          placeholder="Title (e.g. My top 10 cities)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
         />
         <textarea
-          placeholder="Beskrivelse (valgfritt)"
+          placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
@@ -72,7 +72,7 @@ export default function NewListPage() {
         {error && <p style={{ color: '#E8604C', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
 
         <button type="submit" style={{ marginTop: '0.5rem' }}>
-          Opprett liste
+          Create list
         </button>
       </form>
     </div>

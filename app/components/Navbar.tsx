@@ -63,20 +63,20 @@ export default function Navbar() {
 
       {isLoggedIn ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem' }}>
-          <Link href="/search" style={iconStyle('/search')} title="Søk">
+          <Link href="/search" style={iconStyle('/search')} title="Search">
             <Search size={20} strokeWidth={2} />
           </Link>
-          <Link href="/add-city" style={iconStyle('/add-city')} title="Legg til by">
+          <Link href="/map" style={iconStyle('/map')} title="Map">
+            <Map size={20} strokeWidth={2} />
+          </Link>
+          <Link href="/add-city" style={iconStyle('/add-city')} title="Add city">
             <PlusCircle size={20} strokeWidth={2} />
           </Link>
-          <Link href="/lists/new" style={iconStyle('/lists/new')} title="Ny liste">
+          <Link href="/lists/new" style={iconStyle('/lists/new')} title="New list">
             <ListPlus size={20} strokeWidth={2} />
           </Link>
-          <Link href="/profile" style={iconStyle('/profile')} title="Min profil">
+          <Link href="/profile" style={iconStyle('/profile')} title="Profile">
             <User size={20} strokeWidth={2} />
-           <Link href="/map" style={iconStyle('/map')} title="Kart">
-            <Map size={20} strokeWidth={2} />
-          </Link> 
           </Link>
           <button
             onClick={handleLogout}
@@ -87,7 +87,7 @@ export default function Navbar() {
               display: 'flex',
               alignItems: 'center',
             }}
-            title="Logg ut"
+            title="Log out"
           >
             <LogOut size={20} strokeWidth={2} />
           </button>
@@ -98,7 +98,7 @@ export default function Navbar() {
             href="/login"
             style={{ color: 'var(--text-secondary)', padding: '0.5rem 0.9rem', fontSize: '0.9rem' }}
           >
-            Logg inn
+            Log in
           </Link>
           <Link href="/signup">
             <span
@@ -111,7 +111,7 @@ export default function Navbar() {
                 fontWeight: 500,
               }}
             >
-              Registrer
+              Sign up
             </span>
           </Link>
         </div>

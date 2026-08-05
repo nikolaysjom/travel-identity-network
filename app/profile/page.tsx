@@ -93,7 +93,7 @@ export default function ProfilePage() {
   }, [router])
 
   const handleDeleteCity = async (destinationRowId: string) => {
-    const confirmed = confirm('Er du sikker på at du vil slette denne byen?')
+    const confirmed = confirm('Are you sure you want to remove this city?')
     if (!confirmed) return
 
     await supabase.from('user_destinations').delete().eq('id', destinationRowId)
@@ -140,7 +140,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        Laster...
+        Loading...
       </div>
     )
   }
@@ -171,13 +171,13 @@ export default function ProfilePage() {
             href={`/profile/cities?status=${status}`}
             style={{ color: 'var(--accent)', fontSize: '0.8rem' }}
           >
-            Vis alle ({list.length})
+            View all ({list.length})
           </a>
         )}
       </div>
       {list.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-          Ingen steder lagt til ennå.
+          Nothing added yet.
         </p>
       ) : (
         <div
@@ -255,14 +255,14 @@ export default function ProfilePage() {
                 style={{ flex: 1 }}
                 autoFocus
               />
-              <button onClick={handleSaveBio}>Lagre</button>
+              <button onClick={handleSaveBio}>Save</button>
             </div>
           ) : (
             <p
               onClick={() => setEditingBio(true)}
               style={{ color: 'var(--text-secondary)', cursor: 'pointer', margin: 0, fontSize: '0.95rem' }}
             >
-              {profile.bio || 'Legg til en bio'}
+              {profile.bio || 'Add a bio'}
             </p>
           )}
         </div>
@@ -285,7 +285,7 @@ export default function ProfilePage() {
               onChange={handleToggleLocal}
               style={{ width: 'auto', accentColor: 'var(--accent)' }}
             />
-            Tilgjengelig som lokal
+            Available as a local
           </label>
 
           <label
@@ -306,7 +306,7 @@ export default function ProfilePage() {
               onChange={handleTogglePrivate}
               style={{ width: 'auto', accentColor: 'var(--accent)' }}
             />
-            Privat profil (skjuler innholdet på profilen din for andre)
+            Private profile (hides your content from others)
           </label>
         </div>
       </div>
@@ -325,37 +325,37 @@ export default function ProfilePage() {
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
             {countries.size}
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>land</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>countries</div>
         </div>
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
             {visited.length + lived.length}
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>byer</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>cities</div>
         </div>
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
             {followerCount}
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>følgere</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>followers</div>
         </div>
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
             {followingCount}
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>følger</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>following</div>
         </div>
       </div>
 
-      {renderSection('Besøkte byer', visited, 'visited', true)}
-      {renderSection('Har bodd', lived, 'lived', true)}
-      {renderSection('Ønsker å dra', wantToGo, 'want_to_go', false)}
+      {renderSection('Visited cities', visited, 'visited', true)}
+      {renderSection('Lived there', lived, 'lived', true)}
+      {renderSection('Want to go', wantToGo, 'want_to_go', false)}
 
       <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
-        Mine lister
+        My lists
       </h2>
       {lists.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen lister ennå.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No lists yet.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {lists.map((list) => (

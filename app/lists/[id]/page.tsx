@@ -70,7 +70,7 @@ export default function ListPage() {
   }
 
   const handleDeleteList = async () => {
-    const confirmed = confirm('Er du sikker på at du vil slette hele listen?')
+    const confirmed = confirm('Are you sure you want to delete this list?')
     if (!confirmed) return
 
     await supabase.from('lists').delete().eq('id', listId)
@@ -80,7 +80,7 @@ export default function ListPage() {
   if (!list) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        Laster...
+        Loading...
       </div>
     )
   }
@@ -114,13 +114,13 @@ export default function ListPage() {
             flexShrink: 0,
           }}
         >
-          Slett liste
+          Delete list
         </button>
       </div>
 
       {items.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-          Ingen byer i denne listen ennå.
+          No cities in this list yet.
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '2rem' }}>
@@ -173,14 +173,14 @@ export default function ListPage() {
           onChange={(e) => setSelectedId(e.target.value)}
           style={{ flex: 1 }}
         >
-          <option value="">Velg en by</option>
+          <option value="">Choose a city</option>
           {allDestinations.map((d) => (
             <option key={d.id} value={d.id}>
               {d.city_name}, {d.country_name}
             </option>
           ))}
         </select>
-        <button type="submit">Legg til</button>
+        <button type="submit">Add</button>
       </form>
     </div>
   )

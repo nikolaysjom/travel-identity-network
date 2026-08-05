@@ -127,14 +127,14 @@ export default function UserProfilePage() {
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        Laster...
+        Loading...
       </div>
     )
   }
   if (notFound) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        Fant ikke brukeren &quot;{username}&quot;.
+        Couldn&apos;t find the user &quot;{username}&quot;.
       </div>
     )
   }
@@ -148,7 +148,7 @@ export default function UserProfilePage() {
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '5rem 1.5rem', textAlign: 'center' }}>
         <h1 style={{ fontSize: '1.5rem', marginBottom: '0.6rem' }}>{profile.username}</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-          Denne profilen er privat.
+          This profile is private.
         </p>
       </div>
     )
@@ -163,12 +163,12 @@ export default function UserProfilePage() {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.6rem' }}>
-          {profile.bio || 'Ingen bio ennå'}
+          {profile.bio || 'No bio yet'}
         </p>
 
         {profile.is_available_locally && (
           <p style={{ color: 'var(--accent)', fontWeight: 500, fontSize: '0.85rem', marginTop: '0.6rem' }}>
-            Tilgjengelig som lokal
+            Available as a local
           </p>
         )}
       </div>
@@ -188,33 +188,33 @@ export default function UserProfilePage() {
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
             {countries.size}
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>land</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>countries</div>
         </div>
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
             {visited.length + lived.length}
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>byer</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>cities</div>
         </div>
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
             {followerCount}
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>følgere</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>followers</div>
         </div>
         {!isOwnProfile && currentUserId && (
           <button onClick={handleFollow} style={{ marginLeft: 'auto' }}>
-            {isFollowing ? 'Slutt å følge' : 'Følg'}
+            {isFollowing ? 'Unfollow' : 'Follow'}
           </button>
         )}
       </div>
 
       <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
-        Besøkte byer
+        Visited cities
       </h2>
       {visited.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-          Ingen byer lagt til ennå.
+          Nothing added yet.
         </p>
       ) : (
         <div
@@ -261,10 +261,10 @@ export default function UserProfilePage() {
       )}
 
       <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
-        Lister
+        Lists
       </h2>
       {lists.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen lister ennå.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No lists yet.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {lists.map((list) => (

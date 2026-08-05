@@ -29,26 +29,26 @@ export default function SearchPage() {
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 1.5rem' }}>
-      <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Finn brukere</h1>
+      <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Find users</h1>
 
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.7rem', marginBottom: '2rem' }}>
         <input
           type="text"
-          placeholder="Søk etter brukernavn"
+          placeholder="Search by username"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           style={{ flex: 1 }}
         />
-        <button type="submit">Søk</button>
+        <button type="submit">Search</button>
       </form>
 
       {searched && results.length === 0 && (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen brukere funnet.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No users found.</p>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         {results.map((user) => (
-          <a                   
+          <a
             key={user.username}
             href={`/users/${user.username}`}
             style={{

@@ -40,7 +40,7 @@ export default function LoginPage() {
       }}
     >
       <h1 style={{ fontSize: '1.6rem', marginBottom: '0.4rem', textAlign: 'center' }}>
-        Logg inn
+        Log in
       </h1>
       <p
         style={{
@@ -50,7 +50,7 @@ export default function LoginPage() {
           marginBottom: '2.2rem',
         }}
       >
-        Godt å se deg igjen
+        Good to see you again
       </p>
 
       <form
@@ -59,14 +59,14 @@ export default function LoginPage() {
       >
         <input
           type="email"
-          placeholder="E-post"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
           type="password"
-          placeholder="Passord"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -77,7 +77,7 @@ export default function LoginPage() {
         )}
 
         <button type="submit" style={{ marginTop: '0.5rem' }}>
-          Logg inn
+          Log in
         </button>
       </form>
 
@@ -89,9 +89,9 @@ export default function LoginPage() {
           marginTop: '1.5rem',
         }}
       >
-        Har du ikke konto?{' '}
+        Don&apos;t have an account?{' '}
         <Link href="/signup" style={{ color: 'var(--accent)' }}>
-          Registrer deg
+          Sign up
         </Link>
       </p>
     </div>

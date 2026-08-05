@@ -15,9 +15,9 @@ type VisitedCity = {
 }
 
 const titles: Record<string, string> = {
-  visited: 'Besøkte byer',
-  lived: 'Har bodd',
-  want_to_go: 'Ønsker å dra',
+  visited: 'Visited cities',
+  lived: 'Lived there',
+  want_to_go: 'Want to go',
 }
 
 function CitiesOverview() {
@@ -55,7 +55,7 @@ function CitiesOverview() {
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        Laster...
+        Loading...
       </div>
     )
   }
@@ -63,22 +63,22 @@ function CitiesOverview() {
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <a href="/profile" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-        &larr; Tilbake til profil
+        &larr; Back to profile
       </a>
       <h1 style={{ fontSize: '1.5rem', marginTop: '0.8rem', marginBottom: '1.5rem' }}>
-        {titles[status] || 'Byer'}
+        {titles[status] || 'Cities'}
       </h1>
 
       {cities.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen byer her ennå.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Nothing here yet.</p>
       ) : (
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '0.9rem',
-      }}
-    >
+          }}
+        >
           {cities.map((c) => (
             <div
               key={c.id}
@@ -119,7 +119,7 @@ function CitiesOverview() {
 
 export default function CitiesOverviewPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Laster...</div>}>
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>}>
       <CitiesOverview />
     </Suspense>
   )
