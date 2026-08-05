@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { StarDisplay } from '@/app/components/StarRating'
 
 type Profile = {
   username: string
@@ -204,19 +205,8 @@ export default function ProfilePage() {
                 {c.destinations?.country_name}
               </div>
               {showRating && c.rating && (
-                <div
-                  style={{
-                    marginTop: '0.6rem',
-                    fontSize: '0.85rem',
-                    color:
-                      c.rating < 5
-                        ? 'var(--rating-low)'
-                        : c.rating < 7.5
-                        ? 'var(--rating-mid)'
-                        : 'var(--rating-high)',
-                  }}
-                >
-                  {c.rating}/10
+                <div style={{ marginTop: '0.6rem' }}>
+                  <StarDisplay value={c.rating} size={13} />
                 </div>
               )}
               <button

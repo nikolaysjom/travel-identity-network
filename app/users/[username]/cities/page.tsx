@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { StarDisplay } from '@/app/components/StarRating'
 
@@ -21,26 +21,42 @@ const titles: Record<string, string> = {
   want_to_go: 'Want to go',
 }
 
-function CitiesOverview() {
+function PublicCitiesOverview() {
+  const params = useParams()
+  const username = params.username as string
   const searchParams = useSearchParams()
   const status = searchParams.get('status') || 'visited'
-  const router = useRouter()
 
   const [cities, setCities] = useState<VisitedCity[]>([])
   const [loading, setLoading] = useState(true)
+  const [blocked, setBlocked] = useState(false)
 
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/login')
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, is_private')
+        .eq('username', username)
+        .single()
+
+      if (!profileData) {
+        setLoading(false)
+        return
+      }
+
+      const isOwn = session?.user.id === profileData.id
+      if (profileData.is_private && !isOwn) {
+        setBlocked(true)
+        setLoading(false)
         return
       }
 
       const { data } = await supabase
         .from('user_destinations')
         .select('id, rating, status, destinations(city_name, country_name)')
-        .eq('user_id', session.user.id)
+        .eq('user_id', profileData.id)
         .eq('status', status)
 
       const sorted = ((data as unknown as VisitedCity[]) || []).sort(
@@ -51,7 +67,7 @@ function CitiesOverview() {
     }
 
     load()
-  }, [status, router])
+  }, [username, status])
 
   if (loading) {
     return (
@@ -61,9 +77,17 @@ function CitiesOverview() {
     )
   }
 
+  if (blocked) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        This profile is private.
+      </div>
+    )
+  }
+
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <a href="/profile" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+      <a href={`/users/${username}`} style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
         &larr; Back to profile
       </a>
       <h1 style={{ fontSize: '1.5rem', marginTop: '0.8rem', marginBottom: '1.5rem' }}>
@@ -107,10 +131,10 @@ function CitiesOverview() {
   )
 }
 
-export default function CitiesOverviewPage() {
+export default function PublicCitiesOverviewPage() {
   return (
     <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>}>
-      <CitiesOverview />
+      <PublicCitiesOverview />
     </Suspense>
   )
 }

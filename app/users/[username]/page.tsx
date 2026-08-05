@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { StarDisplay } from '@/app/components/StarRating'
 
 type Profile = {
   id: string
@@ -68,7 +69,10 @@ export default function UserProfilePage() {
           .select('id, rating, status, destinations(city_name, country_name)')
           .eq('user_id', profileData.id)
 
-        setCities((citiesData as unknown as VisitedCity[]) || [])
+        const sorted = ((citiesData as unknown as VisitedCity[]) || []).sort(
+          (a, b) => (b.rating ?? -1) - (a.rating ?? -1)
+        )
+        setCities(sorted)
 
         const { data: listsData } = await supabase
           .from('lists')
@@ -156,7 +160,69 @@ export default function UserProfilePage() {
 
   const visited = cities.filter((c) => c.status === 'visited')
   const lived = cities.filter((c) => c.status === 'lived')
+  const wantToGo = cities.filter((c) => c.status === 'want_to_go')
   const countries = new Set([...visited, ...lived].map((c) => c.destinations?.country_name))
+
+  const renderSection = (title: string, list: VisitedCity[], status: string, showRating: boolean) => (
+    <>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: '1rem',
+        }}
+      >
+        <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, margin: 0 }}>
+          {title}
+        </h2>
+        {list.length > 3 && (
+          <a
+            href={`/users/${username}/cities?status=${status}`}
+            style={{ color: 'var(--accent)', fontSize: '0.8rem' }}
+          >
+            View all ({list.length})
+          </a>
+        )}
+      </div>
+      {list.length === 0 ? (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+          Nothing added yet.
+        </p>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '0.9rem',
+            marginBottom: '2.5rem',
+          }}
+        >
+          {list.slice(0, 3).map((c) => (
+            <div
+              key={c.id}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '1rem',
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
+                {c.destinations?.country_name}
+              </div>
+              {showRating && c.rating && (
+                <div style={{ marginTop: '0.6rem' }}>
+                  <StarDisplay value={c.rating} size={13} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
@@ -209,56 +275,9 @@ export default function UserProfilePage() {
         )}
       </div>
 
-      <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
-        Visited cities
-      </h2>
-      {visited.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-          Nothing added yet.
-        </p>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-            gap: '0.9rem',
-            marginBottom: '2.5rem',
-          }}
-        >
-          {visited.map((c) => (
-            <div
-              key={c.id}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
-                padding: '1rem',
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
-                {c.destinations?.country_name}
-              </div>
-              {c.rating && (
-                <div
-                  style={{
-                    marginTop: '0.6rem',
-                    fontSize: '0.85rem',
-                    color:
-                      c.rating < 5
-                        ? 'var(--rating-low)'
-                        : c.rating < 7.5
-                        ? 'var(--rating-mid)'
-                        : 'var(--rating-high)',
-                  }}
-                >
-                  {c.rating}/10
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {renderSection('Visited cities', visited, 'visited', true)}
+      {renderSection('Lived there', lived, 'lived', true)}
+      {renderSection('Want to go', wantToGo, 'want_to_go', false)}
 
       <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
         Lists

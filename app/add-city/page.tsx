@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import CitySearch, { CitySearchResult } from '@/app/components/CitySearch'
+import { StarInput } from '@/app/components/StarRating'
 
 export default function AddCityPage() {
   const [selectedCity, setSelectedCity] = useState<CitySearchResult | null>(null)
   const [status, setStatus] = useState('visited')
-  const [rating, setRating] = useState('')
+  const [rating, setRating] = useState<number | null>(null)
   const [reviewText, setReviewText] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -43,7 +44,6 @@ export default function AddCityPage() {
       return
     }
 
-    // 1. Check if this destination already exists
     const { data: existing } = await supabase
       .from('destinations')
       .select('id')
@@ -53,7 +53,6 @@ export default function AddCityPage() {
 
     let destinationId = existing?.id
 
-    // 2. If not, create it (looking up the country code from our countries table)
     if (!destinationId) {
       const { data: countryMatch } = await supabase
         .from('countries')
@@ -82,12 +81,11 @@ export default function AddCityPage() {
       destinationId = newDestination.id
     }
 
-    // 3. Link it to the user
     const { error: insertError } = await supabase.from('user_destinations').insert({
       user_id: session.user.id,
       destination_id: destinationId,
       status,
-      rating: status !== 'want_to_go' && rating ? parseFloat(rating) : null,
+      rating: status !== 'want_to_go' ? rating : null,
       review_text: reviewText || null,
     })
 
@@ -101,7 +99,7 @@ export default function AddCityPage() {
     setSuccess(true)
     setSelectedCity(null)
     setStatus('visited')
-    setRating('')
+    setRating(null)
     setReviewText('')
   }
 
@@ -120,7 +118,7 @@ export default function AddCityPage() {
         Register a place you have visited, lived in, or want to go
       </p>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
         <CitySearch onSelect={setSelectedCity} placeholder="Search for a city" />
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -148,15 +146,12 @@ export default function AddCityPage() {
         </div>
 
         {status !== 'want_to_go' && (
-          <input
-            type="number"
-            placeholder="Rating (0-10)"
-            min="0"
-            max="10"
-            step="0.1"
-            value={rating}
-            onChange={(e) => setRating(e.target.value)}
-          />
+          <div>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+              Rating
+            </label>
+            <StarInput value={rating} onChange={setRating} />
+          </div>
         )}
 
         <textarea
