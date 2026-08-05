@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import type { CountryStatusMap } from '@/app/components/WorldMap'
 
 const WorldMap = dynamic(() => import('@/app/components/WorldMap'), {
   ssr: false,
   loading: () => (
     <div
       style={{
-        height: '420px',
+        height: '480px',
         borderRadius: '16px',
         border: '1px solid var(--border)',
         display: 'flex',
@@ -19,22 +20,20 @@ const WorldMap = dynamic(() => import('@/app/components/WorldMap'), {
         color: 'var(--text-secondary)',
       }}
     >
-      Laster kart...
+      Loading map...
     </div>
   ),
 })
 
-type MapCity = {
-  id: string
-  status: string
-  city_name: string
-  country_name: string
-  latitude: number | null
-  longitude: number | null
+const STATUS_PRIORITY: Record<string, number> = {
+  lived: 3,
+  visited: 2,
+  want_to_go: 1,
 }
 
 export default function MapPage() {
-  const [cities, setCities] = useState<MapCity[]>([])
+  const [countryStatus, setCountryStatus] = useState<CountryStatusMap>({})
+  const [counts, setCounts] = useState({ visited: 0, lived: 0, want: 0 })
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -48,19 +47,31 @@ export default function MapPage() {
 
       const { data } = await supabase
         .from('user_destinations')
-        .select('id, status, destinations(city_name, country_name, latitude, longitude)')
+        .select('status, destinations(country_code)')
         .eq('user_id', session.user.id)
 
-      const mapped: MapCity[] = (data || []).map((row: any) => ({
-        id: row.id,
-        status: row.status,
-        city_name: row.destinations?.city_name || '',
-        country_name: row.destinations?.country_name || '',
-        latitude: row.destinations?.latitude ?? null,
-        longitude: row.destinations?.longitude ?? null,
-      }))
+      const map: CountryStatusMap = {}
+      let visitedCount = 0
+      let livedCount = 0
+      let wantCount = 0
 
-      setCities(mapped)
+      ;(data || []).forEach((row: any) => {
+        const code = row.destinations?.country_code
+        const status = row.status
+        if (!code || !status) return
+
+        if (status === 'visited') visitedCount++
+        if (status === 'lived') livedCount++
+        if (status === 'want_to_go') wantCount++
+
+        const existing = map[code]
+        if (!existing || STATUS_PRIORITY[status] > STATUS_PRIORITY[existing]) {
+          map[code] = status
+        }
+      })
+
+      setCountryStatus(map)
+      setCounts({ visited: visitedCount, lived: livedCount, want: wantCount })
       setLoading(false)
     }
 
@@ -70,23 +81,19 @@ export default function MapPage() {
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        Laster...
+        Loading...
       </div>
     )
   }
 
-  const visitedCount = cities.filter((c) => c.status === 'visited').length
-  const livedCount = cities.filter((c) => c.status === 'lived').length
-  const wantCount = cities.filter((c) => c.status === 'want_to_go').length
-
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <h1 style={{ fontSize: '1.6rem', marginBottom: '0.4rem' }}>Kart</h1>
+      <h1 style={{ fontSize: '1.6rem', marginBottom: '0.4rem' }}>Map</h1>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-        Alle stedene dine på ett sted
+        All the places you&apos;ve been, lived, and want to go
       </p>
 
-      <WorldMap cities={cities} height="480px" interactive />
+      <WorldMap countryStatus={countryStatus} height="480px" interactive />
 
       <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.2rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
@@ -99,7 +106,7 @@ export default function MapPage() {
               display: 'inline-block',
             }}
           />
-          <span style={{ color: 'var(--text-secondary)' }}>Besøkt ({visitedCount})</span>
+          <span style={{ color: 'var(--text-secondary)' }}>Visited ({counts.visited})</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
           <span
@@ -111,7 +118,7 @@ export default function MapPage() {
               display: 'inline-block',
             }}
           />
-          <span style={{ color: 'var(--text-secondary)' }}>Bodd der ({livedCount})</span>
+          <span style={{ color: 'var(--text-secondary)' }}>Lived there ({counts.lived})</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
           <span
@@ -119,11 +126,11 @@ export default function MapPage() {
               width: 10,
               height: 10,
               borderRadius: '50%',
-              background: '#5B6168',
+              background: '#4A5056',
               display: 'inline-block',
             }}
           />
-          <span style={{ color: 'var(--text-secondary)' }}>Ønsker å dra ({wantCount})</span>
+          <span style={{ color: 'var(--text-secondary)' }}>Want to go ({counts.want})</span>
         </div>
       </div>
     </div>
