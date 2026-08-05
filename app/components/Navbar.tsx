@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { Search, PlusCircle, ListPlus, User, LogOut, Map } from 'lucide-react'
+import { Search, User, LogOut, Map } from 'lucide-react'
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -68,12 +68,6 @@ export default function Navbar() {
           </Link>
           <Link href="/map" style={iconStyle('/map')} title="Map">
             <Map size={20} strokeWidth={2} />
-          </Link>
-          <Link href="/add-city" style={iconStyle('/add-city')} title="Add city">
-            <PlusCircle size={20} strokeWidth={2} />
-          </Link>
-          <Link href="/lists/new" style={iconStyle('/lists/new')} title="New list">
-            <ListPlus size={20} strokeWidth={2} />
           </Link>
           <Link href="/profile" style={iconStyle('/profile')} title="Profile">
             <User size={20} strokeWidth={2} />

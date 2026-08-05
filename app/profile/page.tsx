@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { StarDisplay } from '@/app/components/StarRating'
+import { Plus, List as ListIcon } from 'lucide-react'
+import ConfirmDialog from '@/app/components/ConfirmDialog'
 
 type Profile = {
   username: string
@@ -36,6 +38,8 @@ export default function ProfilePage() {
   const [bioText, setBioText] = useState('')
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
+  const [pendingCityDelete, setPendingCityDelete] = useState<string | null>(null)
+  const [pendingListDelete, setPendingListDelete] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -93,12 +97,18 @@ export default function ProfilePage() {
     loadProfile()
   }, [router])
 
-  const handleDeleteCity = async (destinationRowId: string) => {
-    const confirmed = confirm('Are you sure you want to remove this city?')
-    if (!confirmed) return
+  const confirmDeleteCity = async () => {
+    if (!pendingCityDelete) return
+    await supabase.from('user_destinations').delete().eq('id', pendingCityDelete)
+    setCities((prev) => prev.filter((c) => c.id !== pendingCityDelete))
+    setPendingCityDelete(null)
+  }
 
-    await supabase.from('user_destinations').delete().eq('id', destinationRowId)
-    window.location.reload()
+  const confirmDeleteList = async () => {
+    if (!pendingListDelete) return
+    await supabase.from('lists').delete().eq('id', pendingListDelete)
+    setLists((prev) => prev.filter((l) => l.id !== pendingListDelete))
+    setPendingListDelete(null)
   }
 
   const handleSaveBio = async () => {
@@ -210,7 +220,7 @@ export default function ProfilePage() {
                 </div>
               )}
               <button
-                onClick={() => handleDeleteCity(c.id)}
+                onClick={() => setPendingCityDelete(c.id)}
                 style={{
                   position: 'absolute',
                   top: '0.6rem',
@@ -232,6 +242,21 @@ export default function ProfilePage() {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <ConfirmDialog
+        open={pendingCityDelete !== null}
+        title="Remove city"
+        message="Are you sure you want to remove this city?"
+        onConfirm={confirmDeleteCity}
+        onCancel={() => setPendingCityDelete(null)}
+      />
+      <ConfirmDialog
+        open={pendingListDelete !== null}
+        title="Delete list"
+        message="Are you sure you want to delete this list?"
+        onConfirm={confirmDeleteList}
+        onCancel={() => setPendingListDelete(null)}
+      />
+
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
 
@@ -337,35 +362,103 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1.2rem',
+        }}
+      >
+        <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Places</h2>
+        <a
+          href="/add-city"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '10px',
+            padding: '0.45rem 0.8rem',
+            fontSize: '0.85rem',
+          }}
+        >
+          <Plus size={15} strokeWidth={2} />
+          Add city
+        </a>
+      </div>
+
       {renderSection('Visited cities', visited, 'visited', true)}
       {renderSection('Lived there', lived, 'lived', true)}
       {renderSection('Want to go', wantToGo, 'want_to_go', false)}
 
-      <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
-        My lists
-      </h2>
-      {lists.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No lists yet.</p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          {lists.map((list) => (
-            <a
-              key={list.id}
-              href={`/lists/${list.id}`}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
-                padding: '0.9rem 1.1rem',
-                fontSize: '0.9rem',
-                display: 'block',
-              }}
-            >
-              {list.title}
+      {/* Lists - intentionally de-emphasized, small footer-style section */}
+      <div
+        style={{
+          marginTop: '2.5rem',
+          paddingTop: '1.2rem',
+          borderTop: '1px solid var(--border)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            Lists {lists.length > 0 ? `(${lists.length})` : ''}
+          </span>
+          {lists.length === 0 && (
+            <a href="/lists/new" style={{ fontSize: '0.8rem', color: 'var(--accent)' }}>
+              + New list
             </a>
-          ))}
+          )}
         </div>
-      )}
+
+        {lists.length > 0 && (
+          <ul style={{ margin: '0.6rem 0 0 0', padding: 0, listStyle: 'none' }}>
+            {lists.map((list, i) => (
+              <li
+                key={list.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.4rem 0',
+                  borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                  fontSize: '0.85rem',
+                }}
+              >
+                <a
+                  href={`/lists/${list.id}`}
+                  style={{
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <ListIcon size={13} strokeWidth={2} />
+                  {list.title}
+                </a>
+                <button
+                  onClick={() => setPendingListDelete(list.id)}
+                  style={{
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    padding: '0.1rem 0.4rem',
+                    fontSize: '0.7rem',
+                  }}
+                >
+                  X
+                </button>
+              </li>
+            ))}
+            <li style={{ paddingTop: '0.5rem' }}>
+              <a href="/lists/new" style={{ fontSize: '0.8rem', color: 'var(--accent)' }}>
+                + New list
+              </a>
+            </li>
+          </ul>
+        )}
+      </div>
     </div>
   )
 }

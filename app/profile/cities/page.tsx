@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { StarDisplay } from '@/app/components/StarRating'
+import ConfirmDialog from '@/app/components/ConfirmDialog'
 
 type VisitedCity = {
   id: string
@@ -28,6 +29,7 @@ function CitiesOverview() {
 
   const [cities, setCities] = useState<VisitedCity[]>([])
   const [loading, setLoading] = useState(true)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -53,6 +55,13 @@ function CitiesOverview() {
     load()
   }, [status, router])
 
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    await supabase.from('user_destinations').delete().eq('id', pendingDelete)
+    setCities((prev) => prev.filter((c) => c.id !== pendingDelete))
+    setPendingDelete(null)
+  }
+
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -63,6 +72,14 @@ function CitiesOverview() {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Remove city"
+        message="Are you sure you want to remove this city?"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+
       <a href="/profile" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
         &larr; Back to profile
       </a>
@@ -88,6 +105,7 @@ function CitiesOverview() {
                 border: '1px solid var(--border)',
                 borderRadius: '14px',
                 padding: '1rem',
+                position: 'relative',
               }}
             >
               <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
@@ -99,6 +117,20 @@ function CitiesOverview() {
                   <StarDisplay value={c.rating} size={13} />
                 </div>
               )}
+              <button
+                onClick={() => setPendingDelete(c.id)}
+                style={{
+                  position: 'absolute',
+                  top: '0.6rem',
+                  right: '0.6rem',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.7rem',
+                  padding: '0.2rem 0.4rem',
+                }}
+              >
+                X
+              </button>
             </div>
           ))}
         </div>

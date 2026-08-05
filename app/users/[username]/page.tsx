@@ -287,17 +287,20 @@ export default function UserProfilePage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {lists.map((list) => (
-            <div
+            <a
               key={list.id}
+              href={`/lists/${list.id}`}
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 borderRadius: '14px',
                 padding: '0.9rem 1.1rem',
+                fontSize: '0.9rem',
+                display: 'block',
               }}
             >
               {list.title}
-            </div>
+            </a>
           ))}
         </div>
       )}

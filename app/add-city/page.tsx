@@ -148,19 +148,24 @@ export default function AddCityPage() {
         {status !== 'want_to_go' && (
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
-              Rating
+              Rating <span style={{ opacity: 0.6 }}>(optional)</span>
             </label>
             <StarInput value={rating} onChange={setRating} />
           </div>
         )}
 
-        <textarea
-          placeholder="Short review (optional)"
-          value={reviewText}
-          onChange={(e) => setReviewText(e.target.value)}
-          rows={4}
-          style={{ resize: 'vertical' }}
-        />
+        <div>
+          <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+            Review <span style={{ opacity: 0.6 }}>(optional)</span>
+          </label>
+          <textarea
+            placeholder="Short review"
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+            rows={4}
+            style={{ resize: 'vertical', width: '100%' }}
+          />
+        </div>
 
         {error && <p style={{ color: '#E8604C', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
         {success && (
