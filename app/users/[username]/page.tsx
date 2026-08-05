@@ -117,60 +117,146 @@ export default function UserProfilePage() {
     }
   }
 
-  if (loading) return <div style={{ padding: '2rem' }}>Laster...</div>
-  if (notFound) return <div style={{ padding: '2rem' }}>Fant ikke brukeren "{username}".</div>
+  if (loading) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        Laster...
+      </div>
+    )
+  }
+  if (notFound) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        Fant ikke brukeren &quot;{username}&quot;.
+      </div>
+    )
+  }
   if (!profile) return null
 
   const countries = new Set(cities.map((c) => c.destinations?.country_name))
   const isOwnProfile = currentUserId === profile.id
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '1rem' }}>
-      <h1>{profile.username}</h1>
-      <p>{profile.bio || 'Ingen bio ennå'}</p>
-
-      {profile.is_available_locally && (
-        <p style={{ color: 'green', fontWeight: 'bold' }}>
-          📍 Tilgjengelig som lokal
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.6rem' }}>
+          {profile.bio || 'Ingen bio ennå'}
         </p>
-      )}
 
-      <div style={{ display: 'flex', gap: '2rem', margin: '1.5rem 0', alignItems: 'center' }}>
-        <div>🌎 <strong>{countries.size}</strong> land</div>
-        <div>🏙️ <strong>{cities.length}</strong> byer</div>
-        <div>👥 <strong>{followerCount}</strong> følgere</div>
+        {profile.is_available_locally && (
+          <p style={{ color: 'var(--accent)', fontWeight: 500, fontSize: '0.85rem', marginTop: '0.6rem' }}>
+            Tilgjengelig som lokal
+          </p>
+        )}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '2.5rem',
+          alignItems: 'center',
+          padding: '1.2rem 0',
+          borderTop: '1px solid var(--border)',
+          borderBottom: '1px solid var(--border)',
+          marginBottom: '2.5rem',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
+            {countries.size}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>land</div>
+        </div>
+        <div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
+            {cities.length}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>byer</div>
+        </div>
+        <div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
+            {followerCount}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>følgere</div>
+        </div>
         {!isOwnProfile && currentUserId && (
-          <button onClick={handleFollow}>
+          <button onClick={handleFollow} style={{ marginLeft: 'auto' }}>
             {isFollowing ? 'Slutt å følge' : 'Følg'}
           </button>
         )}
       </div>
 
-      <h2>Besøkte byer</h2>
+      <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
+        Besøkte byer
+      </h2>
       {cities.length === 0 ? (
-        <p>Ingen byer lagt til ennå.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen byer lagt til ennå.</p>
       ) : (
-        <ul>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+            gap: '0.9rem',
+            marginBottom: '2.5rem',
+          }}
+        >
           {cities.map((c) => (
-            <li key={c.id}>
-              {c.destinations?.city_name}, {c.destinations?.country_name}
-              {c.rating ? ` — ⭐ ${c.rating}/10` : ''}
-            </li>
+            <div
+              key={c.id}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '1rem',
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
+                {c.destinations?.country_name}
+              </div>
+              {c.rating && (
+                <div
+                  style={{
+                    marginTop: '0.6rem',
+                    fontSize: '0.85rem',
+                    color:
+                      c.rating < 5
+                        ? 'var(--rating-low)'
+                        : c.rating < 7.5
+                        ? 'var(--rating-mid)'
+                        : 'var(--rating-high)',
+                  }}
+                >
+                  {c.rating}/10
+                </div>
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
-      <h2>Lister</h2>
+      <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
+        Lister
+      </h2>
       {lists.length === 0 ? (
-        <p>Ingen lister ennå.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen lister ennå.</p>
       ) : (
-        <ul>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {lists.map((list) => (
-            <li key={list.id}>
-              <a href={`/lists/${list.id}`}>{list.title}</a>
-            </li>
+            <div
+              key={list.id}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '0.9rem 1.1rem',
+              }}
+            >
+              {list.title}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   )

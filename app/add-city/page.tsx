@@ -65,9 +65,21 @@ export default function AddCityPage() {
   }
 
   return (
-    <div style={{ maxWidth: 500, margin: '2rem auto', padding: '1rem' }}>
-      <h1>Legg til besøkt by</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div
+      style={{
+        maxWidth: 440,
+        margin: '0 auto',
+        padding: '4rem 1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <h1 style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>Legg til besøkt by</h1>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+        Registrer et sted du har vært
+      </p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
         <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} required>
           <option value="">Velg en by</option>
           {destinations.map((d) => (
@@ -91,12 +103,16 @@ export default function AddCityPage() {
           placeholder="Kort anmeldelse (valgfritt)"
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
+          rows={4}
+          style={{ resize: 'vertical' }}
         />
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {success && <p style={{ color: 'green' }}>By lagt til!</p>}
+        {error && <p style={{ color: '#E8604C', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
+        {success && <p style={{ color: 'var(--rating-high)', fontSize: '0.85rem', margin: 0 }}>By lagt til!</p>}
 
-        <button type="submit">Legg til</button>
+        <button type="submit" style={{ marginTop: '0.5rem' }}>
+          Legg til
+        </button>
       </form>
     </div>
   )

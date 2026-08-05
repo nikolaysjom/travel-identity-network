@@ -39,9 +39,21 @@ export default function NewListPage() {
   }
 
   return (
-    <div style={{ maxWidth: 500, margin: '2rem auto', padding: '1rem' }}>
-      <h1>Ny liste</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div
+      style={{
+        maxWidth: 440,
+        margin: '0 auto',
+        padding: '4rem 1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <h1 style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>Ny liste</h1>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+        Samle stedene dine i en liste
+      </p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
         <input
           type="text"
           placeholder="Tittel (f.eks. Mine topp 10 byer)"
@@ -53,9 +65,15 @@ export default function NewListPage() {
           placeholder="Beskrivelse (valgfritt)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+          style={{ resize: 'vertical' }}
         />
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit">Opprett liste</button>
+
+        {error && <p style={{ color: '#E8604C', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
+
+        <button type="submit" style={{ marginTop: '0.5rem' }}>
+          Opprett liste
+        </button>
       </form>
     </div>
   )

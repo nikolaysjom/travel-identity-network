@@ -77,27 +77,102 @@ export default function ListPage() {
     window.location.href = '/profile'
   }
 
-  if (!list) return <div style={{ padding: '2rem' }}>Laster...</div>
+  if (!list) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        Laster...
+      </div>
+    )
+  }
 
   return (
-    <div style={{ maxWidth: 500, margin: '2rem auto', padding: '1rem' }}>
-      <h1>{list.title}</h1>
-      <p>{list.description}</p>
+    <div style={{ maxWidth: 560, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '2rem',
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: '1.6rem', margin: 0 }}>{list.title}</h1>
+          {list.description && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.4rem' }}>
+              {list.description}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={handleDeleteList}
+          style={{
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            fontSize: '0.8rem',
+            padding: '0.4rem 0.7rem',
+            border: '1px solid var(--border)',
+            flexShrink: 0,
+          }}
+        >
+          Slett liste
+        </button>
+      </div>
 
-      <button onClick={handleDeleteList} style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>
-        Slett liste
-      </button>
+      {items.length === 0 ? (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+          Ingen byer i denne listen ennå.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '2rem' }}>
+          {items.map((item, index) => (
+            <div
+              key={item.id}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '0.9rem 1.1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.9rem',
+              }}
+            >
+              <span
+                style={{
+                  color: 'var(--accent)',
+                  fontFamily: 'var(--font-space-grotesk)',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  width: '1.5rem',
+                }}
+              >
+                {index + 1}
+              </span>
+              <div>
+                <div style={{ fontSize: '0.95rem' }}>{item.destinations?.city_name}</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                  {item.destinations?.country_name}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <ol>
-        {items.map((item) => (
-          <li key={item.id}>
-            {item.destinations?.city_name}, {item.destinations?.country_name}
-          </li>
-        ))}
-      </ol>
-
-      <form onSubmit={handleAdd} style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-        <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+      <form
+        onSubmit={handleAdd}
+        style={{
+          display: 'flex',
+          gap: '0.7rem',
+          borderTop: '1px solid var(--border)',
+          paddingTop: '1.5rem',
+        }}
+      >
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          style={{ flex: 1 }}
+        >
           <option value="">Velg en by</option>
           {allDestinations.map((d) => (
             <option key={d.id} value={d.id}>
@@ -105,7 +180,7 @@ export default function ListPage() {
             </option>
           ))}
         </select>
-        <button type="submit">Legg til i listen</button>
+        <button type="submit">Legg til</button>
       </form>
     </div>
   )

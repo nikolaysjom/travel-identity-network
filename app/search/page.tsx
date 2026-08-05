@@ -28,9 +28,10 @@ export default function SearchPage() {
   }
 
   return (
-    <div style={{ maxWidth: 500, margin: '2rem auto', padding: '1rem' }}>
-      <h1>Finn brukere</h1>
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+    <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 1.5rem' }}>
+      <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Finn brukere</h1>
+
+      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.7rem', marginBottom: '2rem' }}>
         <input
           type="text"
           placeholder="Søk etter brukernavn"
@@ -41,16 +42,32 @@ export default function SearchPage() {
         <button type="submit">Søk</button>
       </form>
 
-      {searched && results.length === 0 && <p>Ingen brukere funnet.</p>}
+      {searched && results.length === 0 && (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen brukere funnet.</p>
+      )}
 
-      <ul>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         {results.map((user) => (
-          <li key={user.username} style={{ marginBottom: '0.5rem' }}>
-            <a href={`/users/${user.username}`}>{user.username}</a>
-            {user.bio && <span style={{ color: '#888' }}> — {user.bio}</span>}
-          </li>
+          <a                   
+            key={user.username}
+            href={`/users/${user.username}`}
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '14px',
+              padding: '0.9rem 1.1rem',
+              display: 'block',
+            }}
+          >
+            <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>{user.username}</div>
+            {user.bio && (
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.2rem' }}>
+                {user.bio}
+              </div>
+            )}
+          </a>
         ))}
-      </ul>
+      </div>
     </div>
   )
 }
