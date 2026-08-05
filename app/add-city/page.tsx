@@ -118,7 +118,18 @@ export default function AddCityPage() {
         Register a place you have visited, lived in, or want to go
       </p>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.1rem',
+          background: 'var(--surface)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+          borderRadius: '18px',
+          padding: '1.6rem',
+        }}
+      >
         <CitySearch onSelect={setSelectedCity} placeholder="Search for a city" />
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>

@@ -53,7 +53,18 @@ export default function NewListPage() {
         Collect your favorite places in a list
       </p>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.9rem',
+          background: 'var(--surface)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+          borderRadius: '18px',
+          padding: '1.6rem',
+        }}
+      >
         <input
           type="text"
           placeholder="Title (e.g. My top 10 cities)"

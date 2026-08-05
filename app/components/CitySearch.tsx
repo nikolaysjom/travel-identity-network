@@ -55,12 +55,7 @@ export default function CitySearch({ onSelect, placeholder }: CitySearchProps) {
 
         if (thisRequestId !== requestIdRef.current) return
 
-        const DENY_WORDS = ['airport', 'station', 'terminal']
-        const cleaned = features.filter(
-        (f) => !DENY_WORDS.some((word) => f.text.toLowerCase().includes(word))
-        )
-
-        setResults(cleaned)
+        setResults(features)
         setShowResults(true)
       } catch {
         if (thisRequestId === requestIdRef.current) setResults([])

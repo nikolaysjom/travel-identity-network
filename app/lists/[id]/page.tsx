@@ -337,8 +337,8 @@ export default function ListPage() {
               onDragEnd={handleDragEnd}
               style={{
                 background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                borderRadius: '16px',
                 padding: '0.9rem 1.1rem',
                 opacity: draggedIndex === index ? 0.5 : 1,
               }}
