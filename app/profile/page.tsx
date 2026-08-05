@@ -8,11 +8,13 @@ type Profile = {
   username: string
   bio: string | null
   is_available_locally: boolean
+  is_private: boolean
 }
 
 type VisitedCity = {
   id: string
   rating: number | null
+  status: string
   destinations: {
     city_name: string
     country_name: string
@@ -46,7 +48,7 @@ export default function ProfilePage() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, bio, is_available_locally')
+        .select('username, bio, is_available_locally, is_private')
         .eq('id', session.user.id)
         .single()
 
@@ -55,10 +57,13 @@ export default function ProfilePage() {
 
       const { data: citiesData } = await supabase
         .from('user_destinations')
-        .select('id, rating, destinations(city_name, country_name)')
+        .select('id, rating, status, destinations(city_name, country_name)')
         .eq('user_id', session.user.id)
 
-      setCities((citiesData as unknown as VisitedCity[]) || [])
+      const sortedCities = ((citiesData as unknown as VisitedCity[]) || []).sort(
+        (a, b) => (b.rating ?? -1) - (a.rating ?? -1)
+      )
+      setCities(sortedCities)
 
       const { data: listsData } = await supabase
         .from('lists')
@@ -118,6 +123,20 @@ export default function ProfilePage() {
     setProfile((prev) => (prev ? { ...prev, is_available_locally: newValue } : prev))
   }
 
+  const handleTogglePrivate = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session || !profile) return
+
+    const newValue = !profile.is_private
+
+    await supabase
+      .from('profiles')
+      .update({ is_private: newValue })
+      .eq('id', session.user.id)
+
+    setProfile((prev) => (prev ? { ...prev, is_private: newValue } : prev))
+  }
+
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -127,7 +146,99 @@ export default function ProfilePage() {
   }
   if (!profile) return null
 
-  const countries = new Set(cities.map((c) => c.destinations?.country_name))
+  const visited = cities.filter((c) => c.status === 'visited')
+  const lived = cities.filter((c) => c.status === 'lived')
+  const wantToGo = cities.filter((c) => c.status === 'want_to_go')
+  const countries = new Set(
+    cities.filter((c) => c.status !== 'want_to_go').map((c) => c.destinations?.country_name)
+  )
+
+  const renderSection = (title: string, list: VisitedCity[], status: string, showRating: boolean) => (
+    <>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: '1rem',
+        }}
+      >
+        <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, margin: 0 }}>
+          {title}
+        </h2>
+        {list.length > 3 && (
+          <a
+            href={`/profile/cities?status=${status}`}
+            style={{ color: 'var(--accent)', fontSize: '0.8rem' }}
+          >
+            Vis alle ({list.length})
+          </a>
+        )}
+      </div>
+      {list.length === 0 ? (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+          Ingen steder lagt til ennå.
+        </p>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '0.9rem',
+            marginBottom: '2.5rem',
+          }}
+        >
+          {list.slice(0, 3).map((c) => (
+            <div
+              key={c.id}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '1rem',
+                position: 'relative',
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
+                {c.destinations?.country_name}
+              </div>
+              {showRating && c.rating && (
+                <div
+                  style={{
+                    marginTop: '0.6rem',
+                    fontSize: '0.85rem',
+                    color:
+                      c.rating < 5
+                        ? 'var(--rating-low)'
+                        : c.rating < 7.5
+                        ? 'var(--rating-mid)'
+                        : 'var(--rating-high)',
+                  }}
+                >
+                  {c.rating}/10
+                </div>
+              )}
+              <button
+                onClick={() => handleDeleteCity(c.id)}
+                style={{
+                  position: 'absolute',
+                  top: '0.6rem',
+                  right: '0.6rem',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.7rem',
+                  padding: '0.2rem 0.4rem',
+                }}
+              >
+                X
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
@@ -156,25 +267,48 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <label
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginTop: '0.9rem',
-            fontSize: '0.85rem',
-            color: profile.is_available_locally ? 'var(--accent)' : 'var(--text-secondary)',
-            cursor: 'pointer',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={profile.is_available_locally}
-            onChange={handleToggleLocal}
-            style={{ width: 'auto', accentColor: 'var(--accent)' }}
-          />
-          Tilgjengelig som lokal
-        </label>
+        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginTop: '0.9rem',
+              fontSize: '0.85rem',
+              color: profile.is_available_locally ? 'var(--accent)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={profile.is_available_locally}
+              onChange={handleToggleLocal}
+              style={{ width: 'auto', accentColor: 'var(--accent)' }}
+            />
+            Tilgjengelig som lokal
+          </label>
+
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginTop: '0.9rem',
+              marginLeft: '1.2rem',
+              fontSize: '0.85rem',
+              color: profile.is_private ? 'var(--accent)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={profile.is_private}
+              onChange={handleTogglePrivate}
+              style={{ width: 'auto', accentColor: 'var(--accent)' }}
+            />
+            Privat profil (skjuler innholdet på profilen din for andre)
+          </label>
+        </div>
       </div>
 
       <div
@@ -195,7 +329,7 @@ export default function ProfilePage() {
         </div>
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
-            {cities.length}
+            {visited.length + lived.length}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>byer</div>
         </div>
@@ -213,70 +347,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
-        Besøkte byer
-      </h2>
-      {cities.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen byer lagt til ennå.</p>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-            gap: '0.9rem',
-            marginBottom: '2.5rem',
-          }}
-        >
-          {cities.map((c) => (
-            <div
-              key={c.id}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
-                padding: '1rem',
-                position: 'relative',
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
-                {c.destinations?.country_name}
-              </div>
-              {c.rating && (
-                <div
-                  style={{
-                    marginTop: '0.6rem',
-                    fontSize: '0.85rem',
-                    color:
-                      c.rating < 5
-                        ? 'var(--rating-low)'
-                        : c.rating < 7.5
-                        ? 'var(--rating-mid)'
-                        : 'var(--rating-high)',
-          }}
-        >
-          {c.rating}/10
-        </div>
-      )}
-              
-              <button
-                onClick={() => handleDeleteCity(c.id)}
-                style={{
-                  position: 'absolute',
-                  top: '0.6rem',
-                  right: '0.6rem',
-                  background: 'transparent',
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.7rem',
-                  padding: '0.2rem 0.4rem',
-                }}
-              >
-                X
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {renderSection('Besøkte byer', visited, 'visited', true)}
+      {renderSection('Har bodd', lived, 'lived', true)}
+      {renderSection('Ønsker å dra', wantToGo, 'want_to_go', false)}
 
       <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
         Mine lister
@@ -285,11 +358,11 @@ export default function ProfilePage() {
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen lister ennå.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-         {lists.map((list) => (
+          {lists.map((list) => (
             <a
               key={list.id}
-                href={`/lists/${list.id}`}
-                style={{
+              href={`/lists/${list.id}`}
+              style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 borderRadius: '14px',

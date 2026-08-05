@@ -9,11 +9,13 @@ type Profile = {
   username: string
   bio: string | null
   is_available_locally: boolean
+  is_private: boolean
 }
 
 type VisitedCity = {
   id: string
   rating: number | null
+  status: string
   destinations: {
     city_name: string
     country_name: string
@@ -45,7 +47,7 @@ export default function UserProfilePage() {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, username, bio, is_available_locally')
+        .select('id, username, bio, is_available_locally, is_private')
         .eq('username', username)
         .single()
 
@@ -57,36 +59,41 @@ export default function UserProfilePage() {
 
       setProfile(profileData)
 
-      const { data: citiesData } = await supabase
-        .from('user_destinations')
-        .select('id, rating, destinations(city_name, country_name)')
-        .eq('user_id', profileData.id)
+      const isOwn = session?.user.id === profileData.id
+      const isPrivateForViewer = profileData.is_private && !isOwn
 
-      setCities((citiesData as unknown as VisitedCity[]) || [])
+      if (!isPrivateForViewer) {
+        const { data: citiesData } = await supabase
+          .from('user_destinations')
+          .select('id, rating, status, destinations(city_name, country_name)')
+          .eq('user_id', profileData.id)
 
-      const { data: listsData } = await supabase
-        .from('lists')
-        .select('id, title')
-        .eq('user_id', profileData.id)
+        setCities((citiesData as unknown as VisitedCity[]) || [])
 
-      setLists(listsData || [])
+        const { data: listsData } = await supabase
+          .from('lists')
+          .select('id, title')
+          .eq('user_id', profileData.id)
 
-      const { count: followers } = await supabase
-        .from('follows')
-        .select('id', { count: 'exact' })
-        .eq('following_id', profileData.id)
+        setLists(listsData || [])
 
-      setFollowerCount(followers || 0)
-
-      if (session) {
-        const { data: followData } = await supabase
+        const { count: followers } = await supabase
           .from('follows')
-          .select('id')
-          .eq('follower_id', session.user.id)
+          .select('id', { count: 'exact' })
           .eq('following_id', profileData.id)
-          .single()
 
-        setIsFollowing(!!followData)
+        setFollowerCount(followers || 0)
+
+        if (session) {
+          const { data: followData } = await supabase
+            .from('follows')
+            .select('id')
+            .eq('follower_id', session.user.id)
+            .eq('following_id', profileData.id)
+            .single()
+
+          setIsFollowing(!!followData)
+        }
       }
 
       setLoading(false)
@@ -133,8 +140,23 @@ export default function UserProfilePage() {
   }
   if (!profile) return null
 
-  const countries = new Set(cities.map((c) => c.destinations?.country_name))
   const isOwnProfile = currentUserId === profile.id
+  const isPrivateForViewer = profile.is_private && !isOwnProfile
+
+  if (isPrivateForViewer) {
+    return (
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '5rem 1.5rem', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: '0.6rem' }}>{profile.username}</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+          Denne profilen er privat.
+        </p>
+      </div>
+    )
+  }
+
+  const visited = cities.filter((c) => c.status === 'visited')
+  const lived = cities.filter((c) => c.status === 'lived')
+  const countries = new Set([...visited, ...lived].map((c) => c.destinations?.country_name))
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
@@ -170,7 +192,7 @@ export default function UserProfilePage() {
         </div>
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
-            {cities.length}
+            {visited.length + lived.length}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>byer</div>
         </div>
@@ -190,8 +212,10 @@ export default function UserProfilePage() {
       <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
         Besøkte byer
       </h2>
-      {cities.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Ingen byer lagt til ennå.</p>
+      {visited.length === 0 ? (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+          Ingen byer lagt til ennå.
+        </p>
       ) : (
         <div
           style={{
@@ -201,7 +225,7 @@ export default function UserProfilePage() {
             marginBottom: '2.5rem',
           }}
         >
-          {cities.map((c) => (
+          {visited.map((c) => (
             <div
               key={c.id}
               style={{
