@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Avatar } from '@/app/components/Avatar'
 
 type Profile = {
   username: string
   bio: string | null
+  avatar_url: string | null
 }
 
 export default function SearchPage() {
@@ -19,7 +21,7 @@ export default function SearchPage() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('username, bio')
+      .select('username, bio, avatar_url')
       .ilike('username', `%${query}%`)
       .limit(20)
 
@@ -57,15 +59,20 @@ export default function SearchPage() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
               borderRadius: '16px',
               padding: '0.9rem 1.1rem',
-              display: 'block',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.8rem',
             }}
           >
-            <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>{user.username}</div>
-            {user.bio && (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.2rem' }}>
-                {user.bio}
-              </div>
-            )}
+            <Avatar url={user.avatar_url} username={user.username} size={40} />
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>{user.username}</div>
+              {user.bio && (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
+                  {user.bio}
+                </div>
+              )}
+            </div>
           </a>
         ))}
       </div>

@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation'
 import { StarDisplay } from '@/app/components/StarRating'
 import { Plus, List as ListIcon } from 'lucide-react'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { Avatar, AvatarPicker } from '@/app/components/Avatar'
 
 type Profile = {
   username: string
   bio: string | null
   is_available_locally: boolean
   is_private: boolean
+  avatar_url: string | null
 }
 
 type VisitedCity = {
@@ -40,6 +42,7 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0)
   const [pendingCityDelete, setPendingCityDelete] = useState<string | null>(null)
   const [pendingListDelete, setPendingListDelete] = useState<string | null>(null)
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function ProfilePage() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, bio, is_available_locally, is_private')
+        .select('username, bio, is_available_locally, is_private, avatar_url')
         .eq('id', session.user.id)
         .single()
 
@@ -148,6 +151,15 @@ export default function ProfilePage() {
     setProfile((prev) => (prev ? { ...prev, is_private: newValue } : prev))
   }
 
+  const handleSelectAvatar = async (url: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', session.user.id)
+    setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))
+    setShowAvatarPicker(false)
+  }
+
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -204,8 +216,8 @@ export default function ProfilePage() {
               key={c.id}
               style={{
                 background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                borderRadius: '18px',
                 padding: '1rem',
                 position: 'relative',
               }}
@@ -258,7 +270,20 @@ export default function ProfilePage() {
       />
 
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
+        {showAvatarPicker && (
+          <AvatarPicker onSelect={handleSelectAvatar} onClose={() => setShowAvatarPicker(false)} />
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button
+            onClick={() => setShowAvatarPicker(true)}
+            style={{ background: 'transparent', padding: 0, border: 'none' }}
+            title="Change avatar"
+          >
+            <Avatar url={profile.avatar_url} username={profile.username} size={56} />
+          </button>
+          <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
+        </div>
 
         <div style={{ marginTop: '0.6rem' }}>
           {editingBio ? (

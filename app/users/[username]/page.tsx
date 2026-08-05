@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { StarDisplay } from '@/app/components/StarRating'
+import { Avatar } from '@/app/components/Avatar'
 
 type Profile = {
   id: string
@@ -11,6 +12,7 @@ type Profile = {
   bio: string | null
   is_available_locally: boolean
   is_private: boolean
+  avatar_url: string | null
 }
 
 type VisitedCity = {
@@ -48,7 +50,7 @@ export default function UserProfilePage() {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, username, bio, is_available_locally, is_private')
+        .select('id, username, bio, is_available_locally, is_private, avatar_url')
         .eq('username', username)
         .single()
 
@@ -203,8 +205,8 @@ export default function UserProfilePage() {
               key={c.id}
               style={{
                 background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                borderRadius: '18px',
                 padding: '1rem',
               }}
             >
@@ -227,7 +229,10 @@ export default function UserProfilePage() {
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Avatar url={profile.avatar_url} username={profile.username} size={56} />
+          <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{profile.username}</h1>
+        </div>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.6rem' }}>
           {profile.bio || 'No bio yet'}
         </p>
@@ -292,8 +297,8 @@ export default function UserProfilePage() {
               href={`/lists/${list.id}`}
               style={{
                 background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                borderRadius: '18px',
                 padding: '0.9rem 1.1rem',
                 fontSize: '0.9rem',
                 display: 'block',
