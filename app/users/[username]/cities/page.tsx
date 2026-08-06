@@ -29,7 +29,6 @@ function PublicCitiesOverview() {
 
   const [cities, setCities] = useState<VisitedCity[]>([])
   const [loading, setLoading] = useState(true)
-  const [blocked, setBlocked] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -37,18 +36,11 @@ function PublicCitiesOverview() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id, is_private')
+        .select('id')
         .eq('username', username)
         .single()
 
       if (!profileData) {
-        setLoading(false)
-        return
-      }
-
-      const isOwn = session?.user.id === profileData.id
-      if (profileData.is_private && !isOwn) {
-        setBlocked(true)
         setLoading(false)
         return
       }
@@ -73,14 +65,6 @@ function PublicCitiesOverview() {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
         Loading...
-      </div>
-    )
-  }
-
-  if (blocked) {
-    return (
-      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        This profile is private.
       </div>
     )
   }

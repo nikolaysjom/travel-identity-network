@@ -5,11 +5,15 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { StarDisplay } from '@/app/components/StarRating'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
+import EditCityDialog, { EditCityData } from '@/app/components/EditCityDialog'
 
 type VisitedCity = {
   id: string
   rating: number | null
   status: string
+  personal_note: string | null
+  review_title: string | null
+  review_text: string | null
   destinations: {
     city_name: string
     country_name: string
@@ -30,28 +34,29 @@ function CitiesOverview() {
   const [cities, setCities] = useState<VisitedCity[]>([])
   const [loading, setLoading] = useState(true)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [editingCity, setEditingCity] = useState<EditCityData | null>(null)
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/login')
-        return
-      }
-
-      const { data } = await supabase
-        .from('user_destinations')
-        .select('id, rating, status, destinations(city_name, country_name)')
-        .eq('user_id', session.user.id)
-        .eq('status', status)
-
-      const sorted = ((data as unknown as VisitedCity[]) || []).sort(
-        (a, b) => (b.rating ?? -1) - (a.rating ?? -1)
-      )
-      setCities(sorted)
-      setLoading(false)
+  const load = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/login')
+      return
     }
 
+    const { data } = await supabase
+      .from('user_destinations')
+      .select('id, rating, status, personal_note, review_title, review_text, destinations(city_name, country_name)')
+      .eq('user_id', session.user.id)
+      .eq('status', status)
+
+    const sorted = ((data as unknown as VisitedCity[]) || []).sort(
+      (a, b) => (b.rating ?? -1) - (a.rating ?? -1)
+    )
+    setCities(sorted)
+    setLoading(false)
+  }
+
+  useEffect(() => {
     load()
   }, [status, router])
 
@@ -60,6 +65,31 @@ function CitiesOverview() {
     await supabase.from('user_destinations').delete().eq('id', pendingDelete)
     setCities((prev) => prev.filter((c) => c.id !== pendingDelete))
     setPendingDelete(null)
+  }
+
+  const handleSaveCityEdit = async (
+    id: string,
+    newStatus: string,
+    rating: number | null,
+    personalNote: string,
+    reviewTitle: string,
+    reviewText: string
+  ) => {
+    await supabase
+      .from('user_destinations')
+      .update({
+        status: newStatus,
+        rating,
+        personal_note: personalNote || null,
+        review_title: reviewTitle || null,
+        review_text: reviewText || null,
+      })
+      .eq('id', id)
+
+    // If the status changed, this city no longer belongs on this page's
+    // filtered list, so just reload from scratch.
+    setEditingCity(null)
+    load()
   }
 
   if (loading) {
@@ -78,6 +108,12 @@ function CitiesOverview() {
         message="Are you sure you want to remove this city?"
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <EditCityDialog
+        city={editingCity}
+        onSave={handleSaveCityEdit}
+        onClose={() => setEditingCity(null)}
       />
 
       <a href="/profile" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
@@ -100,12 +136,25 @@ function CitiesOverview() {
           {cities.map((c) => (
             <div
               key={c.id}
+              onClick={() =>
+                setEditingCity({
+                  id: c.id,
+                  cityName: c.destinations?.city_name || '',
+                  countryName: c.destinations?.country_name || '',
+                  status: c.status,
+                  rating: c.rating,
+                  personalNote: c.personal_note,
+                  reviewTitle: c.review_title,
+                  reviewText: c.review_text,
+                })
+              }
               style={{
                 background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                borderRadius: '18px',
                 padding: '1rem',
                 position: 'relative',
+                cursor: 'pointer',
               }}
             >
               <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
@@ -118,7 +167,10 @@ function CitiesOverview() {
                 </div>
               )}
               <button
-                onClick={() => setPendingDelete(c.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setPendingDelete(c.id)
+                }}
                 style={{
                   position: 'absolute',
                   top: '0.6rem',

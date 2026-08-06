@@ -6,20 +6,52 @@ import { useRouter } from 'next/navigation'
 import { StarDisplay } from '@/app/components/StarRating'
 import { Plus, List as ListIcon } from 'lucide-react'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
+import EditCityDialog, { EditCityData } from '@/app/components/EditCityDialog'
 import { Avatar, AvatarPicker } from '@/app/components/Avatar'
+import CitySearch, { CitySearchResult } from '@/app/components/CitySearch'
+import dynamic from 'next/dynamic'
+import type { CountryStatusMap } from '@/app/components/WorldMap'
+
+const WorldMap = dynamic(() => import('@/app/components/WorldMap'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        height: '220px',
+        borderRadius: '16px',
+        border: '1px solid var(--border)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--text-secondary)',
+        fontSize: '0.85rem',
+      }}
+    >
+      Loading map...
+    </div>
+  ),
+})
 
 type Profile = {
   username: string
   bio: string | null
   is_available_locally: boolean
-  is_private: boolean
+  is_traveling: boolean
   avatar_url: string | null
+  home_city_id: string | null
+  traveling_city_id: string | null
+  traveling_until: string | null
+  home_city: { city_name: string; country_name: string } | null
+  current_city: { city_name: string; country_name: string } | null
 }
 
 type VisitedCity = {
   id: string
   rating: number | null
   status: string
+  personal_note: string | null
+  review_title: string | null
+  review_text: string | null
   destinations: {
     city_name: string
     country_name: string
@@ -31,6 +63,15 @@ type ListItem = {
   title: string
 }
 
+const CONTINENT_CENTERS: Record<string, [number, number]> = {
+  Europe: [54, 15],
+  Asia: [34, 100],
+  Africa: [2, 20],
+  'North America': [45, -100],
+  'South America': [-15, -60],
+  Oceania: [-25, 140],
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [cities, setCities] = useState<VisitedCity[]>([])
@@ -40,9 +81,22 @@ export default function ProfilePage() {
   const [bioText, setBioText] = useState('')
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
+  const [countryStatus, setCountryStatus] = useState<CountryStatusMap>({})
+  const [worldPercent, setWorldPercent] = useState(0)
+  const [continentPercents, setContinentPercents] = useState<{ name: string; percent: number }[]>([])
   const [pendingCityDelete, setPendingCityDelete] = useState<string | null>(null)
   const [pendingListDelete, setPendingListDelete] = useState<string | null>(null)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [editingCity, setEditingCity] = useState<EditCityData | null>(null)
+  const [showLocalCityPicker, setShowLocalCityPicker] = useState(false)
+  const [showTravelCityPicker, setShowTravelCityPicker] = useState(false)
+  const [travelUntilDate, setTravelUntilDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 14)
+    return d.toISOString().split('T')[0]
+  })
+  const [travelUnknownDuration, setTravelUnknownDuration] = useState(false)
+  const [statusWarning, setStatusWarning] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -56,16 +110,32 @@ export default function ProfilePage() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, bio, is_available_locally, is_private, avatar_url')
+        .select('username, bio, is_available_locally, is_traveling, avatar_url, home_city_id, traveling_city_id, traveling_until, home_city:destinations!home_city_id(city_name, country_name), current_city:destinations!traveling_city_id(city_name, country_name)')
         .eq('id', session.user.id)
         .single()
 
-      setProfile(profileData)
-      setBioText(profileData?.bio || '')
+      let finalProfile = profileData
+
+      // Auto-expire "currently traveling" status if the set duration has passed
+      if (
+        profileData?.is_traveling &&
+        profileData.traveling_until &&
+        new Date(profileData.traveling_until) < new Date()
+      ) {
+        await supabase
+          .from('profiles')
+          .update({ is_traveling: false })
+          .eq('id', session.user.id)
+
+        finalProfile = { ...profileData, is_traveling: false }
+      }
+
+      setProfile(finalProfile)
+      setBioText(finalProfile?.bio || '')
 
       const { data: citiesData } = await supabase
         .from('user_destinations')
-        .select('id, rating, status, destinations(city_name, country_name)')
+        .select('id, rating, status, personal_note, review_title, review_text, destinations(city_name, country_name)')
         .eq('user_id', session.user.id)
 
       const sortedCities = ((citiesData as unknown as VisitedCity[]) || []).sort(
@@ -94,6 +164,69 @@ export default function ProfilePage() {
 
       setFollowingCount(following || 0)
 
+      // Build country-level map + discovery percentages
+      const { data: destStatusData } = await supabase
+        .from('user_destinations')
+        .select('status, destinations(country_code)')
+        .eq('user_id', session.user.id)
+
+      const { data: manualCountryData } = await supabase
+        .from('user_countries')
+        .select('country_code, status, place_type')
+        .eq('user_id', session.user.id)
+
+      const discovered = new Set<string>()
+      const cMap: CountryStatusMap = {}
+
+      ;(destStatusData || []).forEach((row: any) => {
+        const code = row.destinations?.country_code
+        if (!code) return
+        if (row.status === 'visited' || row.status === 'lived') {
+          discovered.add(code)
+          cMap[code] = row.status
+        }
+      })
+      ;(manualCountryData || []).forEach((row: any) => {
+        if (row.place_type === 'territory') return
+        if (!row.country_code) return
+        if (row.status === 'visited' || row.status === 'lived') {
+          discovered.add(row.country_code)
+          cMap[row.country_code] = row.status
+        }
+      })
+
+      setCountryStatus(cMap)
+
+      const { data: allCountries } = await supabase
+        .from('countries')
+        .select('code, continent')
+        .eq('place_type', 'country')
+
+      if (allCountries && allCountries.length > 0) {
+        const totalCountries = allCountries.length
+        setWorldPercent(Math.round((discovered.size / totalCountries) * 100))
+
+        const continentTotals: Record<string, number> = {}
+        const continentDiscovered: Record<string, number> = {}
+
+        allCountries.forEach((c: any) => {
+          if (!c.continent) return
+          continentTotals[c.continent] = (continentTotals[c.continent] || 0) + 1
+          if (discovered.has(c.code)) {
+            continentDiscovered[c.continent] = (continentDiscovered[c.continent] || 0) + 1
+          }
+        })
+
+        const percents = Object.keys(continentTotals)
+          .sort()
+          .map((name) => ({
+            name,
+            percent: Math.round(((continentDiscovered[name] || 0) / continentTotals[name]) * 100),
+          }))
+
+        setContinentPercents(percents)
+      }
+
       setLoading(false)
     }
 
@@ -105,6 +238,42 @@ export default function ProfilePage() {
     await supabase.from('user_destinations').delete().eq('id', pendingCityDelete)
     setCities((prev) => prev.filter((c) => c.id !== pendingCityDelete))
     setPendingCityDelete(null)
+  }
+
+  const handleSaveCityEdit = async (
+    id: string,
+    status: string,
+    rating: number | null,
+    personalNote: string,
+    reviewTitle: string,
+    reviewText: string
+  ) => {
+    await supabase
+      .from('user_destinations')
+      .update({
+        status,
+        rating,
+        personal_note: personalNote || null,
+        review_title: reviewTitle || null,
+        review_text: reviewText || null,
+      })
+      .eq('id', id)
+
+    setCities((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              status,
+              rating,
+              personal_note: personalNote || null,
+              review_title: reviewTitle || null,
+              review_text: reviewText || null,
+            }
+          : c
+      )
+    )
+    setEditingCity(null)
   }
 
   const confirmDeleteList = async () => {
@@ -127,29 +296,161 @@ export default function ProfilePage() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session || !profile) return
 
-    const newValue = !profile.is_available_locally
+    if (profile.is_available_locally) {
+      await supabase
+        .from('profiles')
+        .update({ is_available_locally: false })
+        .eq('id', session.user.id)
+
+      setProfile((prev) => (prev ? { ...prev, is_available_locally: false } : prev))
+      return
+    }
+
+    if (profile.is_traveling) {
+      setStatusWarning('You can only be active as a local or currently traveling at a time.')
+      return
+    }
+
+    setStatusWarning('')
+
+    if (!profile.home_city_id) {
+      setShowLocalCityPicker(true)
+      return
+    }
 
     await supabase
       .from('profiles')
-      .update({ is_available_locally: newValue })
+      .update({ is_available_locally: true })
       .eq('id', session.user.id)
 
-    setProfile((prev) => (prev ? { ...prev, is_available_locally: newValue } : prev))
+    setProfile((prev) => (prev ? { ...prev, is_available_locally: true } : prev))
   }
 
-  const handleTogglePrivate = async () => {
+  const handleToggleTraveling = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session || !profile) return
 
-    const newValue = !profile.is_private
+    if (profile.is_traveling) {
+      await supabase
+        .from('profiles')
+        .update({ is_traveling: false })
+        .eq('id', session.user.id)
+
+      setProfile((prev) => (prev ? { ...prev, is_traveling: false } : prev))
+      return
+    }
+
+    if (profile.is_available_locally) {
+      setStatusWarning('You can only be active as a local or currently traveling at a time.')
+      return
+    }
+
+    setStatusWarning('')
+
+    if (!profile.traveling_city_id) {
+      setShowTravelCityPicker(true)
+      return
+    }
 
     await supabase
       .from('profiles')
-      .update({ is_private: newValue })
+      .update({ is_traveling: true })
       .eq('id', session.user.id)
 
-    setProfile((prev) => (prev ? { ...prev, is_private: newValue } : prev))
+    setProfile((prev) => (prev ? { ...prev, is_traveling: true } : prev))
   }
+
+  const findOrCreateDestination = async (city: CitySearchResult): Promise<string | null> => {
+    const { data: existing } = await supabase
+      .from('destinations')
+      .select('id')
+      .ilike('city_name', city.city_name)
+      .ilike('country_name', city.country_name)
+      .maybeSingle()
+
+    if (existing?.id) return existing.id
+
+    const { data: countryMatch } = await supabase
+      .from('countries')
+      .select('code')
+      .ilike('name', city.country_name)
+      .maybeSingle()
+
+    const { data: newDestination } = await supabase
+      .from('destinations')
+      .insert({
+        city_name: city.city_name,
+        country_name: city.country_name,
+        country_code: countryMatch?.code || null,
+        latitude: city.latitude,
+        longitude: city.longitude,
+      })
+      .select()
+      .single()
+
+    return newDestination?.id || null
+  }
+
+  const handleSetLocalCity = async (city: CitySearchResult) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    const destinationId = await findOrCreateDestination(city)
+    if (!destinationId) return
+
+    await supabase
+      .from('profiles')
+      .update({ home_city_id: destinationId, is_available_locally: true })
+      .eq('id', session.user.id)
+
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            home_city_id: destinationId,
+            is_available_locally: true,
+            home_city: { city_name: city.city_name, country_name: city.country_name },
+          }
+        : prev
+    )
+    setShowLocalCityPicker(false)
+  }
+
+  const handleSetTravelingCity = async (city: CitySearchResult) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    const destinationId = await findOrCreateDestination(city)
+    if (!destinationId) return
+
+    let untilIso: string
+    if (travelUnknownDuration) {
+      const fallback = new Date()
+      fallback.setDate(fallback.getDate() + 14)
+      untilIso = fallback.toISOString()
+    } else {
+      untilIso = new Date(travelUntilDate + 'T23:59:59').toISOString()
+    }
+
+    await supabase
+      .from('profiles')
+      .update({ traveling_city_id: destinationId, is_traveling: true, traveling_until: untilIso })
+      .eq('id', session.user.id)
+
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            traveling_city_id: destinationId,
+            is_traveling: true,
+            traveling_until: untilIso,
+            current_city: { city_name: city.city_name, country_name: city.country_name },
+          }
+        : prev
+    )
+    setShowTravelCityPicker(false)
+  }
+
 
   const handleSelectAvatar = async (url: string) => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -172,9 +473,6 @@ export default function ProfilePage() {
   const visited = cities.filter((c) => c.status === 'visited')
   const lived = cities.filter((c) => c.status === 'lived')
   const wantToGo = cities.filter((c) => c.status === 'want_to_go')
-  const countries = new Set(
-    cities.filter((c) => c.status !== 'want_to_go').map((c) => c.destinations?.country_name)
-  )
 
   const renderSection = (title: string, list: VisitedCity[], status: string, showRating: boolean) => (
     <>
@@ -214,12 +512,25 @@ export default function ProfilePage() {
           {list.slice(0, 3).map((c) => (
             <div
               key={c.id}
+              onClick={() =>
+                setEditingCity({
+                  id: c.id,
+                  cityName: c.destinations?.city_name || '',
+                  countryName: c.destinations?.country_name || '',
+                  status: c.status,
+                  rating: c.rating,
+                  personalNote: c.personal_note,
+                  reviewTitle: c.review_title,
+                  reviewText: c.review_text,
+                })
+              }
               style={{
                 background: 'var(--surface)',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
                 borderRadius: '18px',
                 padding: '1rem',
                 position: 'relative',
+                cursor: 'pointer',
               }}
             >
               <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.destinations?.city_name}</div>
@@ -232,7 +543,10 @@ export default function ProfilePage() {
                 </div>
               )}
               <button
-                onClick={() => setPendingCityDelete(c.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setPendingCityDelete(c.id)
+                }}
                 style={{
                   position: 'absolute',
                   top: '0.6rem',
@@ -267,6 +581,12 @@ export default function ProfilePage() {
         message="Are you sure you want to delete this list?"
         onConfirm={confirmDeleteList}
         onCancel={() => setPendingListDelete(null)}
+      />
+
+      <EditCityDialog
+        city={editingCity}
+        onSave={handleSaveCityEdit}
+        onClose={() => setEditingCity(null)}
       />
 
       <div style={{ marginBottom: '2rem' }}>
@@ -307,49 +627,197 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-          <label
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginTop: '0.9rem',
-              fontSize: '0.85rem',
-              color: profile.is_available_locally ? 'var(--accent)' : 'var(--text-secondary)',
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={profile.is_available_locally}
-              onChange={handleToggleLocal}
-              style={{ width: 'auto', accentColor: 'var(--accent)' }}
-            />
-            Available as a local
-          </label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.2rem' }}>
+          <div>
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginTop: '0.9rem',
+                fontSize: '0.85rem',
+                color: profile.is_available_locally ? 'var(--accent)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={profile.is_available_locally}
+                onChange={handleToggleLocal}
+                style={{ width: 'auto', accentColor: 'var(--accent)' }}
+              />
+              {profile.home_city
+                ? `Available as a local in ${profile.home_city.city_name}`
+                : 'Available as a local'}
+            </label>
 
-          <label
+            {profile.is_available_locally && profile.home_city && (
+              <button
+                onClick={() => setShowLocalCityPicker(true)}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.78rem',
+                  padding: '0.2rem 0.5rem',
+                  marginTop: '0.9rem',
+                  textDecoration: 'underline',
+                  display: 'block',
+                }}
+              >
+                Change city
+              </button>
+            )}
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginTop: '0.9rem',
+                fontSize: '0.85rem',
+                color: profile.is_traveling ? 'var(--accent)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={profile.is_traveling}
+                onChange={handleToggleTraveling}
+                style={{ width: 'auto', accentColor: 'var(--accent)' }}
+              />
+              {profile.current_city
+                ? `Currently in ${profile.current_city.city_name}`
+                : 'Currently traveling'}
+            </label>
+
+            {profile.is_traveling && profile.current_city && (
+              <button
+                onClick={() => setShowTravelCityPicker(true)}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.78rem',
+                  padding: '0.2rem 0.5rem',
+                  marginTop: '0.9rem',
+                  textDecoration: 'underline',
+                  display: 'block',
+                }}
+              >
+                Change city
+              </button>
+            )}
+          </div>
+        </div>
+
+        {statusWarning && (
+          <p style={{ color: '#D1453B', fontSize: '0.8rem', marginTop: '0.6rem' }}>{statusWarning}</p>
+        )}
+      </div>
+
+      {showLocalCityPicker && (
+        <div
+          onClick={() => setShowLocalCityPicker(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '1.5rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginTop: '0.9rem',
-              marginLeft: '1.2rem',
-              fontSize: '0.85rem',
-              color: profile.is_private ? 'var(--accent)' : 'var(--text-secondary)',
-              cursor: 'pointer',
+              background: 'var(--surface)',
+              borderRadius: '18px',
+              padding: '1.5rem',
+              maxWidth: 360,
+              width: '100%',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
             }}
           >
-            <input
-              type="checkbox"
-              checked={profile.is_private}
-              onChange={handleTogglePrivate}
-              style={{ width: 'auto', accentColor: 'var(--accent)' }}
-            />
-            Private profile (hides your content from others)
-          </label>
+            <h3 style={{ margin: '0 0 0.8rem 0', fontSize: '1rem' }}>Which city are you local in?</h3>
+            <CitySearch onSelect={handleSetLocalCity} placeholder="Search for a city" />
+          </div>
         </div>
-      </div>
+      )}
+
+      {showTravelCityPicker && (
+        <div
+          onClick={() => setShowTravelCityPicker(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '1.5rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--surface)',
+              borderRadius: '18px',
+              padding: '1.5rem',
+              maxWidth: 360,
+              width: '100%',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 0.8rem 0', fontSize: '1rem' }}>Which city are you in right now?</h3>
+
+            <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+              Until when will you be there?
+            </label>
+
+            {!travelUnknownDuration && (
+              <input
+                type="date"
+                value={travelUntilDate}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setTravelUntilDate(e.target.value)}
+                style={{ width: '100%', marginBottom: '0.5rem' }}
+              />
+            )}
+
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.78rem',
+                color: 'var(--text-secondary)',
+                marginBottom: '0.5rem',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={travelUnknownDuration}
+                onChange={(e) => setTravelUnknownDuration(e.target.checked)}
+                style={{ width: 'auto', accentColor: 'var(--accent)' }}
+              />
+              Not sure yet
+            </label>
+
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.9rem' }}>
+              {travelUnknownDuration
+                ? 'Automatically turns off in 2 weeks unless you update it.'
+                : 'Automatically turns off after this date unless you update it.'}
+            </p>
+
+            <CitySearch onSelect={handleSetTravelingCity} placeholder="Search for a city" />
+          </div>
+        </div>
+      )}
 
       <div
         style={{
@@ -363,7 +831,7 @@ export default function ProfilePage() {
       >
         <div>
           <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-space-grotesk)' }}>
-            {countries.size}
+            {Object.keys(countryStatus).length}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>countries</div>
         </div>
@@ -384,6 +852,67 @@ export default function ProfilePage() {
             {followingCount}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>following</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '2.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            marginBottom: '0.8rem',
+          }}
+        >
+          <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, margin: 0 }}>
+            World map
+          </h2>
+          <a href="/map" style={{ color: 'var(--accent)', fontSize: '0.8rem' }}>
+            View full map
+          </a>
+        </div>
+
+        <WorldMap
+          countryStatus={countryStatus}
+          height="200px"
+          interactive={false}
+          center={
+            continentPercents.length > 0
+              ? CONTINENT_CENTERS[
+                  [...continentPercents].sort((a, b) => b.percent - a.percent)[0].name
+                ]
+              : undefined
+          }
+          zoom={2}
+        />
+
+        <div style={{ marginTop: '0.9rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.6rem' }}>
+            <span
+              style={{
+                fontSize: '1.3rem',
+                fontWeight: 700,
+                fontFamily: 'var(--font-space-grotesk)',
+              }}
+            >
+              {worldPercent}%
+            </span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>of the world discovered</span>
+          </div>
+
+          {continentPercents.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.2rem' }}>
+              {continentPercents.map((c) => (
+                <div
+                  key={c.name}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
+                >
+                  <span style={{ color: 'var(--text-secondary)' }}>{c.name}</span>
+                  <span style={{ fontWeight: 600 }}>{c.percent}%</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

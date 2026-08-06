@@ -20,6 +20,8 @@ type WorldMapProps = {
   cities?: MapCity[]
   height?: string
   interactive?: boolean
+  center?: [number, number]
+  zoom?: number
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -40,6 +42,8 @@ export default function WorldMap({
   cities = [],
   height = '420px',
   interactive = true,
+  center,
+  zoom,
 }: WorldMapProps) {
   const [geoData, setGeoData] = useState<any>(null)
 
@@ -104,12 +108,15 @@ export default function WorldMap({
         borderRadius: '16px',
         overflow: 'hidden',
         border: '1px solid var(--border)',
+        position: 'relative',
+        isolation: 'isolate',
+        zIndex: 0,
       }}
     >
       <MapContainer
-        center={[20, 10]}
-        zoom={3}
-        minZoom={3}
+        center={center || [20, 10]}
+        zoom={zoom ?? (interactive ? 3 : 2)}
+        minZoom={interactive ? 3 : 1}
         maxBounds={[[-90, -180], [90, 180]]}
         maxBoundsViscosity={1.0}
         style={{ height: '100%', width: '100%', background: '#F7F7F7' }}
@@ -123,6 +130,7 @@ export default function WorldMap({
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+          noWrap={true}
         />
         {geoData && <GeoJSON data={geoData} style={styleFeature} />}
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { Search, User, LogOut, Map } from 'lucide-react'
+import { Search, User, LogOut, Map, Compass } from 'lucide-react'
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -58,13 +58,16 @@ export default function Navbar() {
           letterSpacing: '-0.02em',
         }}
       >
-        Travel Identity Network
+        Pangeo
       </Link>
 
       {isLoggedIn ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem' }}>
           <Link href="/search" style={iconStyle('/search')} title="Search">
             <Search size={20} strokeWidth={2} />
+          </Link>
+          <Link href="/cities" style={iconStyle('/cities')} title="Explore cities">
+            <Compass size={20} strokeWidth={2} />
           </Link>
           <Link href="/map" style={iconStyle('/map')} title="Map">
             <Map size={20} strokeWidth={2} />

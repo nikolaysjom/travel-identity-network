@@ -11,8 +11,11 @@ type Profile = {
   username: string
   bio: string | null
   is_available_locally: boolean
-  is_private: boolean
+  is_traveling: boolean
+  traveling_until: string | null
   avatar_url: string | null
+  home_city: { city_name: string; country_name: string } | null
+  current_city: { city_name: string; country_name: string } | null
 }
 
 type VisitedCity = {
@@ -50,7 +53,7 @@ export default function UserProfilePage() {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, username, bio, is_available_locally, is_private, avatar_url')
+        .select('id, username, bio, is_available_locally, is_traveling, traveling_until, avatar_url, home_city:destinations!home_city_id(city_name, country_name), current_city:destinations!traveling_city_id(city_name, country_name)')
         .eq('username', username)
         .single()
 
@@ -60,46 +63,49 @@ export default function UserProfilePage() {
         return
       }
 
-      setProfile(profileData)
+      // Don't show a stale "currently traveling" badge if it has expired -
+      // the owner's own session will clean up the DB row when they next load
+      // their profile, but visitors shouldn't see outdated info meanwhile.
+      const isTravelExpired =
+        profileData.is_traveling &&
+        profileData.traveling_until &&
+        new Date(profileData.traveling_until) < new Date()
 
-      const isOwn = session?.user.id === profileData.id
-      const isPrivateForViewer = profileData.is_private && !isOwn
+      setProfile(isTravelExpired ? { ...profileData, is_traveling: false } : profileData)
 
-      if (!isPrivateForViewer) {
-        const { data: citiesData } = await supabase
-          .from('user_destinations')
-          .select('id, rating, status, destinations(city_name, country_name)')
-          .eq('user_id', profileData.id)
+      const { data: citiesData } = await supabase
+        .from('user_destinations')
+        .select('id, rating, status, destinations(city_name, country_name)')
+        .eq('user_id', profileData.id)
 
-        const sorted = ((citiesData as unknown as VisitedCity[]) || []).sort(
-          (a, b) => (b.rating ?? -1) - (a.rating ?? -1)
-        )
-        setCities(sorted)
+      const sorted = ((citiesData as unknown as VisitedCity[]) || []).sort(
+        (a, b) => (b.rating ?? -1) - (a.rating ?? -1)
+      )
+      setCities(sorted)
 
-        const { data: listsData } = await supabase
-          .from('lists')
-          .select('id, title')
-          .eq('user_id', profileData.id)
+      const { data: listsData } = await supabase
+        .from('lists')
+        .select('id, title')
+        .eq('user_id', profileData.id)
 
-        setLists(listsData || [])
+      setLists(listsData || [])
 
-        const { count: followers } = await supabase
+      const { count: followers } = await supabase
+        .from('follows')
+        .select('id', { count: 'exact' })
+        .eq('following_id', profileData.id)
+
+      setFollowerCount(followers || 0)
+
+      if (session) {
+        const { data: followData } = await supabase
           .from('follows')
-          .select('id', { count: 'exact' })
+          .select('id')
+          .eq('follower_id', session.user.id)
           .eq('following_id', profileData.id)
+          .single()
 
-        setFollowerCount(followers || 0)
-
-        if (session) {
-          const { data: followData } = await supabase
-            .from('follows')
-            .select('id')
-            .eq('follower_id', session.user.id)
-            .eq('following_id', profileData.id)
-            .single()
-
-          setIsFollowing(!!followData)
-        }
+        setIsFollowing(!!followData)
       }
 
       setLoading(false)
@@ -147,18 +153,6 @@ export default function UserProfilePage() {
   if (!profile) return null
 
   const isOwnProfile = currentUserId === profile.id
-  const isPrivateForViewer = profile.is_private && !isOwnProfile
-
-  if (isPrivateForViewer) {
-    return (
-      <div style={{ maxWidth: 480, margin: '0 auto', padding: '5rem 1.5rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '1.5rem', marginBottom: '0.6rem' }}>{profile.username}</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-          This profile is private.
-        </p>
-      </div>
-    )
-  }
 
   const visited = cities.filter((c) => c.status === 'visited')
   const lived = cities.filter((c) => c.status === 'lived')
@@ -239,7 +233,17 @@ export default function UserProfilePage() {
 
         {profile.is_available_locally && (
           <p style={{ color: 'var(--accent)', fontWeight: 500, fontSize: '0.85rem', marginTop: '0.6rem' }}>
-            Available as a local
+            {profile.home_city
+              ? `Available as a local in ${profile.home_city.city_name}`
+              : 'Available as a local'}
+          </p>
+        )}
+
+        {profile.is_traveling && (
+          <p style={{ color: 'var(--accent)', fontWeight: 500, fontSize: '0.85rem', marginTop: '0.6rem' }}>
+            {profile.current_city
+              ? `Currently in ${profile.current_city.city_name}`
+              : 'Currently traveling'}
           </p>
         )}
       </div>
