@@ -63,12 +63,11 @@ export default function MapPage() {
       const cityList: MapCity[] = []
       const visitedCountries = new Set<string>()
       const livedCountries = new Set<string>()
-      const wantCountries = new Set<string>()
 
       ;(cityData || []).forEach((row: any) => {
         const dest = row.destinations
         const status = row.status
-        if (!dest || !status) return
+        if (!dest || !status || status === 'want_to_go') return
 
         if (dest.country_code) {
           const existing = countryMap[dest.country_code]
@@ -77,7 +76,6 @@ export default function MapPage() {
           }
           if (status === 'visited') visitedCountries.add(dest.country_code)
           if (status === 'lived') livedCountries.add(dest.country_code)
-          if (status === 'want_to_go') wantCountries.add(dest.country_code)
         }
 
         if (dest.latitude != null && dest.longitude != null) {
@@ -93,7 +91,7 @@ export default function MapPage() {
 
       ;(countryData || []).forEach((row: any) => {
         const { country_code, status, place_type } = row
-        if (!country_code || !status) return
+        if (!country_code || !status || status === 'want_to_go') return
 
         if (place_type === 'territory') {
           const existing = territoryMap[country_code]
@@ -107,7 +105,6 @@ export default function MapPage() {
           }
           if (status === 'visited') visitedCountries.add(country_code)
           if (status === 'lived') livedCountries.add(country_code)
-          if (status === 'want_to_go') wantCountries.add(country_code)
         }
       })
 
@@ -117,7 +114,7 @@ export default function MapPage() {
       setStatusCounts({
         visited: visitedCountries.size,
         lived: livedCountries.size,
-        want_to_go: wantCountries.size,
+        want_to_go: 0,
       })
       setLoading(false)
     }
@@ -179,12 +176,6 @@ export default function MapPage() {
             style={{ width: 10, height: 10, borderRadius: '50%', background: '#E8A33D', display: 'inline-block' }}
           />
           <span style={{ color: 'var(--text-secondary)' }}>Lived there ({statusCounts.lived})</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-          <span
-            style={{ width: 10, height: 10, borderRadius: '50%', background: '#5B7A99', display: 'inline-block' }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>Want to go ({statusCounts.want_to_go})</span>
         </div>
       </div>
     </div>

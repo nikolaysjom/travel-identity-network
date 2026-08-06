@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import { Search, User, LogOut, Map, Compass } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Search, User, Map, Compass } from 'lucide-react'
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
@@ -24,12 +23,6 @@ export default function Navbar() {
       authListener.subscription.unsubscribe()
     }
   }, [])
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
-  }
 
   const iconStyle = (path: string) => ({
     color: pathname === path ? 'var(--accent)' : 'var(--text-secondary)',
@@ -62,7 +55,7 @@ export default function Navbar() {
       </Link>
 
       {isLoggedIn ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem' }}>
+        <div className="tin-navbar-icons" style={{ display: 'flex', alignItems: 'center', gap: '1.4rem' }}>
           <Link href="/search" style={iconStyle('/search')} title="Search">
             <Search size={20} strokeWidth={2} />
           </Link>
@@ -75,19 +68,6 @@ export default function Navbar() {
           <Link href="/profile" style={iconStyle('/profile')} title="Profile">
             <User size={20} strokeWidth={2} />
           </Link>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              padding: '0.4rem',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-            title="Log out"
-          >
-            <LogOut size={20} strokeWidth={2} />
-          </button>
         </div>
       ) : (
         <div style={{ display: 'flex', gap: '0.75rem' }}>

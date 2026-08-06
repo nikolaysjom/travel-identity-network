@@ -160,7 +160,6 @@ export default function AddCityPage() {
           {[
             { value: 'visited', label: 'Visited' },
             { value: 'lived', label: 'Lived there' },
-            { value: 'want_to_go', label: 'Want to go' },
           ].map((opt) => (
             <button
               key={opt.value}

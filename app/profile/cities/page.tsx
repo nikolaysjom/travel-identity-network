@@ -114,6 +114,10 @@ function CitiesOverview() {
         city={editingCity}
         onSave={handleSaveCityEdit}
         onClose={() => setEditingCity(null)}
+        onDelete={(id) => {
+          setPendingDelete(id)
+          setEditingCity(null)
+        }}
       />
 
       <a href="/profile" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
@@ -166,23 +170,6 @@ function CitiesOverview() {
                   <StarDisplay value={c.rating} size={13} />
                 </div>
               )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setPendingDelete(c.id)
-                }}
-                style={{
-                  position: 'absolute',
-                  top: '0.6rem',
-                  right: '0.6rem',
-                  background: 'transparent',
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.7rem',
-                  padding: '0.2rem 0.4rem',
-                }}
-              >
-                X
-              </button>
             </div>
           ))}
         </div>

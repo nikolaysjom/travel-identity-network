@@ -156,7 +156,6 @@ export default function UserProfilePage() {
 
   const visited = cities.filter((c) => c.status === 'visited')
   const lived = cities.filter((c) => c.status === 'lived')
-  const wantToGo = cities.filter((c) => c.status === 'want_to_go')
   const countries = new Set([...visited, ...lived].map((c) => c.destinations?.country_name))
 
   const renderSection = (title: string, list: VisitedCity[], status: string, showRating: boolean) => (
@@ -286,7 +285,6 @@ export default function UserProfilePage() {
 
       {renderSection('Visited cities', visited, 'visited', true)}
       {renderSection('Lived there', lived, 'lived', true)}
-      {renderSection('Want to go', wantToGo, 'want_to_go', false)}
 
       <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '1rem' }}>
         Lists

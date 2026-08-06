@@ -83,7 +83,7 @@ export default function ManageCountriesPage() {
     ;(cityData || []).forEach((row: any) => {
       const code = row.destinations?.country_code
       const status = row.status
-      if (!code || !status) return
+      if (!code || !status || status === 'want_to_go') return
 
       const info = infoMap[code]
       if (!info) return
@@ -106,7 +106,7 @@ export default function ManageCountriesPage() {
     ;(manualData || []).forEach((row: any) => {
       const code = row.country_code
       const status = row.status
-      if (!code || !status) return
+      if (!code || !status || status === 'want_to_go') return
 
       const info = infoMap[code]
       if (!info) return
@@ -234,7 +234,6 @@ export default function ManageCountriesPage() {
           {[
             { value: 'visited', label: 'Visited' },
             { value: 'lived', label: 'Lived there' },
-            { value: 'want_to_go', label: 'Want to go' },
           ].map((opt) => (
             <button
               key={opt.value}

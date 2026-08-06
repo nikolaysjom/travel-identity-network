@@ -25,9 +25,10 @@ type EditCityDialogProps = {
     reviewText: string
   ) => void
   onClose: () => void
+  onDelete: (id: string) => void
 }
 
-export default function EditCityDialog({ city, onSave, onClose }: EditCityDialogProps) {
+export default function EditCityDialog({ city, onSave, onClose, onDelete }: EditCityDialogProps) {
   const [status, setStatus] = useState('visited')
   const [rating, setRating] = useState<number | null>(null)
   const [personalNote, setPersonalNote] = useState('')
@@ -96,7 +97,6 @@ export default function EditCityDialog({ city, onSave, onClose }: EditCityDialog
           {[
             { value: 'visited', label: 'Visited' },
             { value: 'lived', label: 'Lived there' },
-            { value: 'want_to_go', label: 'Want to go' },
           ].map((opt) => (
             <button
               key={opt.value}
@@ -182,18 +182,31 @@ export default function EditCityDialog({ city, onSave, onClose }: EditCityDialog
           </button>
         )}
 
-        <div style={{ display: 'flex', gap: '0.7rem', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button
-            onClick={onClose}
+            onClick={() => onDelete(city.id)}
             style={{
               background: 'transparent',
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)',
+              color: '#D1453B',
+              padding: '0.5rem 0',
             }}
           >
-            Cancel
+            Delete
           </button>
-          <button onClick={handleSave}>Save</button>
+
+          <div style={{ display: 'flex', gap: '0.7rem' }}>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              Cancel
+            </button>
+            <button onClick={handleSave}>Save</button>
+          </div>
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { StarDisplay } from '@/app/components/StarRating'
-import { Plus, List as ListIcon } from 'lucide-react'
+import { Plus, List as ListIcon, LogOut, X } from 'lucide-react'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
 import EditCityDialog, { EditCityData } from '@/app/components/EditCityDialog'
 import { Avatar, AvatarPicker } from '@/app/components/Avatar'
@@ -99,6 +99,12 @@ export default function ProfilePage() {
   const [statusWarning, setStatusWarning] = useState('')
   const router = useRouter()
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+    router.refresh()
+  }
+
   useEffect(() => {
     const loadProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -124,10 +130,16 @@ export default function ProfilePage() {
       ) {
         await supabase
           .from('profiles')
-          .update({ is_traveling: false })
+          .update({ is_traveling: false, traveling_city_id: null, traveling_until: null })
           .eq('id', session.user.id)
 
-        finalProfile = { ...profileData, is_traveling: false }
+        finalProfile = {
+          ...profileData,
+          is_traveling: false,
+          traveling_city_id: null,
+          traveling_until: null,
+          current_city: null,
+        }
       }
 
       setProfile(finalProfile)
@@ -299,10 +311,13 @@ export default function ProfilePage() {
     if (profile.is_available_locally) {
       await supabase
         .from('profiles')
-        .update({ is_available_locally: false })
+        .update({ is_available_locally: false, home_city_id: null })
         .eq('id', session.user.id)
 
-      setProfile((prev) => (prev ? { ...prev, is_available_locally: false } : prev))
+      setProfile((prev) =>
+        prev ? { ...prev, is_available_locally: false, home_city_id: null, home_city: null } : prev
+      )
+      setStatusWarning('')
       return
     }
 
@@ -333,10 +348,15 @@ export default function ProfilePage() {
     if (profile.is_traveling) {
       await supabase
         .from('profiles')
-        .update({ is_traveling: false })
+        .update({ is_traveling: false, traveling_city_id: null, traveling_until: null })
         .eq('id', session.user.id)
 
-      setProfile((prev) => (prev ? { ...prev, is_traveling: false } : prev))
+      setProfile((prev) =>
+        prev
+          ? { ...prev, is_traveling: false, traveling_city_id: null, traveling_until: null, current_city: null }
+          : prev
+      )
+      setStatusWarning('')
       return
     }
 
@@ -472,7 +492,6 @@ export default function ProfilePage() {
 
   const visited = cities.filter((c) => c.status === 'visited')
   const lived = cities.filter((c) => c.status === 'lived')
-  const wantToGo = cities.filter((c) => c.status === 'want_to_go')
 
   const renderSection = (title: string, list: VisitedCity[], status: string, showRating: boolean) => (
     <>
@@ -542,23 +561,6 @@ export default function ProfilePage() {
                   <StarDisplay value={c.rating} size={13} />
                 </div>
               )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setPendingCityDelete(c.id)
-                }}
-                style={{
-                  position: 'absolute',
-                  top: '0.6rem',
-                  right: '0.6rem',
-                  background: 'transparent',
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.7rem',
-                  padding: '0.2rem 0.4rem',
-                }}
-              >
-                X
-              </button>
             </div>
           ))}
         </div>
@@ -587,6 +589,10 @@ export default function ProfilePage() {
         city={editingCity}
         onSave={handleSaveCityEdit}
         onClose={() => setEditingCity(null)}
+        onDelete={(id) => {
+          setPendingCityDelete(id)
+          setEditingCity(null)
+        }}
       />
 
       <div style={{ marginBottom: '2rem' }}>
@@ -627,6 +633,9 @@ export default function ProfilePage() {
           )}
         </div>
 
+        <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '1.5rem', marginBottom: '0' }}>
+          Status
+        </h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.2rem' }}>
           <div>
             <label
@@ -646,7 +655,7 @@ export default function ProfilePage() {
                 onChange={handleToggleLocal}
                 style={{ width: 'auto', accentColor: 'var(--accent)' }}
               />
-              {profile.home_city
+              {profile.is_available_locally && profile.home_city
                 ? `Available as a local in ${profile.home_city.city_name}`
                 : 'Available as a local'}
             </label>
@@ -687,9 +696,9 @@ export default function ProfilePage() {
                 onChange={handleToggleTraveling}
                 style={{ width: 'auto', accentColor: 'var(--accent)' }}
               />
-              {profile.current_city
+              {profile.is_traveling && profile.current_city
                 ? `Currently in ${profile.current_city.city_name}`
-                : 'Currently traveling'}
+                : 'Travel mode'}
             </label>
 
             {profile.is_traveling && profile.current_city && (
@@ -739,9 +748,27 @@ export default function ProfilePage() {
               maxWidth: 360,
               width: '100%',
               boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              position: 'relative',
             }}
           >
-            <h3 style={{ margin: '0 0 0.8rem 0', fontSize: '1rem' }}>Which city are you local in?</h3>
+            <button
+              onClick={() => setShowLocalCityPicker(false)}
+              style={{
+                position: 'absolute',
+                top: '0.9rem',
+                right: '0.9rem',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                padding: '0.2rem',
+                display: 'flex',
+              }}
+            >
+              <X size={16} strokeWidth={2} />
+            </button>
+            <h3 style={{ margin: '0 1.5rem 0.5rem 0', fontSize: '1rem' }}>Which city are you local in?</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.9rem' }}>
+              Let other travelers know you&apos;re a local here and open to connecting &mdash; visible to anyone browsing this city.
+            </p>
             <CitySearch onSelect={handleSetLocalCity} placeholder="Search for a city" />
           </div>
         </div>
@@ -770,9 +797,27 @@ export default function ProfilePage() {
               maxWidth: 360,
               width: '100%',
               boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              position: 'relative',
             }}
           >
-            <h3 style={{ margin: '0 0 0.8rem 0', fontSize: '1rem' }}>Which city are you in right now?</h3>
+            <button
+              onClick={() => setShowTravelCityPicker(false)}
+              style={{
+                position: 'absolute',
+                top: '0.9rem',
+                right: '0.9rem',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                padding: '0.2rem',
+                display: 'flex',
+              }}
+            >
+              <X size={16} strokeWidth={2} />
+            </button>
+            <h3 style={{ margin: '0 1.5rem 0.5rem 0', fontSize: '1rem' }}>Which city are you in right now?</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.9rem' }}>
+              Show other Pangeo users you&apos;re currently visiting this city &mdash; a good way to connect with locals or fellow travelers while you&apos;re there.
+            </p>
 
             <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
               Until when will you be there?
@@ -865,7 +910,7 @@ export default function ProfilePage() {
           }}
         >
           <h2 style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500, margin: 0 }}>
-            World map
+            My travel map
           </h2>
           <a href="/map" style={{ color: 'var(--accent)', fontSize: '0.8rem' }}>
             View full map
@@ -945,7 +990,6 @@ export default function ProfilePage() {
 
       {renderSection('Visited cities', visited, 'visited', true)}
       {renderSection('Lived there', lived, 'lived', true)}
-      {renderSection('Want to go', wantToGo, 'want_to_go', false)}
 
       {/* Lists - intentionally de-emphasized, small footer-style section */}
       <div
@@ -1012,6 +1056,24 @@ export default function ProfilePage() {
             </li>
           </ul>
         )}
+      </div>
+
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.2rem', marginTop: '2.5rem' }}>
+        <button
+          onClick={handleLogout}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border)',
+            fontSize: '0.85rem',
+          }}
+        >
+          <LogOut size={15} strokeWidth={2} />
+          Log out
+        </button>
       </div>
     </div>
   )

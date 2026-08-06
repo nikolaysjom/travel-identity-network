@@ -82,6 +82,7 @@ export default function CityDetailPage() {
       .select('id, rating, review_title, review_text, status, created_at, user_id, profiles(username, avatar_url)')
       .eq('destination_id', destinationId)
       .or('rating.not.is.null,review_text.not.is.null')
+      .neq('status', 'want_to_go')
       .order('created_at', { ascending: false })
 
     const reviewIds = (reviewRows || []).map((r: any) => r.id)
@@ -419,7 +420,6 @@ export default function CityDetailPage() {
             {[
               { value: 'visited', label: 'Visited' },
               { value: 'lived', label: 'Lived there' },
-              { value: 'want_to_go', label: 'Want to go' },
             ].map((opt) => (
               <button
                 key={opt.value}
