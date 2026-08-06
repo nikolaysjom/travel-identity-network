@@ -16,7 +16,6 @@ export type MapCity = {
 
 type WorldMapProps = {
   countryStatus: CountryStatusMap
-  territoryStatus?: CountryStatusMap
   cities?: MapCity[]
   height?: string
   interactive?: boolean
@@ -25,7 +24,7 @@ type WorldMapProps = {
 const STATUS_COLOR: Record<string, string> = {
   visited: '#2E9B63',
   lived: '#E8A33D',
-  want_to_go: '#5B7A99',
+  want_to_go: '#9B9B9B',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -36,7 +35,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function WorldMap({
   countryStatus,
-  territoryStatus = {},
   cities = [],
   height = '420px',
   interactive = true,
@@ -44,43 +42,16 @@ export default function WorldMap({
   const [geoData, setGeoData] = useState<any>(null)
 
   useEffect(() => {
-    fetch(
-      'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_map_subunits.geojson'
-    )
+    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
       .then((res) => res.json())
       .then(setGeoData)
       .catch(() => setGeoData(null))
   }, [])
 
-  // A subunit is treated as the country's "main" territory only when its
-  // own name matches the overall admin name - this excludes named outlying
-  const getValidCode = (value: any) => (value && value !== '-99' ? value : null)
-
   const styleFeature = (feature: any) => {
-    const iso = getValidCode(feature?.properties?.ISO_A3 || feature?.properties?.iso_a3)
-    const adm0 = getValidCode(feature?.properties?.ADM0_A3 || feature?.properties?.adm0_a3)
-    const su = getValidCode(feature?.properties?.SU_A3 || feature?.properties?.su_a3)
+    const code = feature?.id
+    const status = code ? countryStatus[code] : undefined
 
-    // Territory entries (specific islands etc) match on the feature's own
-    // ISO code if it has one, otherwise its unique subunit code - this lets
-    // us color just that one place, distinct from its parent country.
-    const territoryCode = iso || su
-    const territoryMatch = territoryCode ? territoryStatus[territoryCode] : undefined
-    if (territoryMatch) {
-      return {
-        fillColor: STATUS_COLOR[territoryMatch],
-        fillOpacity: 0.18,
-        color: STATUS_COLOR[territoryMatch],
-        weight: 1.8,
-        opacity: 0.9,
-      }
-    }
-
-    // Country entries color every feature that shares the country's code -
-    // consistently across all countries, including island nations made up
-    // of many separate landmasses (Japan, Indonesia, Philippines, etc).
-    const countryCode = iso || adm0
-    const status = countryCode ? countryStatus[countryCode] : undefined
     if (!status) {
       return {
         fillOpacity: 0,
